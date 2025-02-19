@@ -21,6 +21,7 @@ import numpy as np
 import logging
 
 from nomad.units import ureg
+from nomad.parsing import MatchingParser
 from nomad.parsing.file_parser import TextParser, Quantity
 from runschema.run import Run, Program
 from runschema.method import (
@@ -40,12 +41,11 @@ from runschema.calculation import (
     ElectricFieldGradient,
     SpinSpinCoupling,
 )
-from nomad_parser_magres.schema import m_package
 
 # For the automatic workflow NMR
 from nomad.search import search
 from nomad.app.v1.models import MetadataRequired
-from .utils import BeyondDFTWorkflowsParser
+from nomad_parser_magres.utils import BeyondDFTWorkflowsParser
 
 
 re_float = r' *[-+]?\d+\.\d*(?:[Ee][-+]\d+)? *'
@@ -182,11 +182,13 @@ class MagresFileParser(TextParser):
         ]
 
 
-class MagresParser(BeyondDFTWorkflowsParser):
+class MagresParser(MatchingParser):
     level = 1
 
-    def __init__(self):
+    def init_parser(self):
         self.magres_file_parser = MagresFileParser()
+        self.magres_file_parser.mainfile = self.filepath
+        self.magres_file_parser.logger = self.logger
 
         self._xc_functional_map = {
             'LDA': ['LDA_C_PZ', 'LDA_X_PZ'],
@@ -204,10 +206,6 @@ class MagresParser(BeyondDFTWorkflowsParser):
             'HSE06': ['HYB_GGA_XC_HSE06'],
             'RSCAN': ['MGGA_X_RSCAN', 'MGGA_C_RSCAN'],
         }
-
-    def init_parser(self):
-        self.magres_file_parser.mainfile = self.filepath
-        self.magres_file_parser.logger = self.logger
 
     def _check_units_magres(self):
         """

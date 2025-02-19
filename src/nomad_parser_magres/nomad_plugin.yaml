@@ -1,8 +1,0 @@
-plugin_type: parser
-name: parsers/magres
-description: |
-  This plugin is used to parsed magres files into the NOMAD schema.
-mainfile_contents_re: \$magres-abinitio-v(\d\.)+
-mainfile_name_re: ^.*\.magres
-parser_class_name: nomad_parser_magres.MagresParser
-code_name: Magres

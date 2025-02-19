@@ -22,7 +22,7 @@ from nomad.metainfo import (  # pylint: disable=unused-import
     MSection,
     MCategory,
     Category,
-    Package,
+    SchemaPackage,
     Quantity,
     Section,
     SubSection,
@@ -37,7 +37,7 @@ from runschema.calculation import (
 )
 
 
-m_package = Package()
+m_package = SchemaPackage()
 
 
 class MagneticShielding(BaseMagneticShielding):

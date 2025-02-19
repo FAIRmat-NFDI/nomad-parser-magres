@@ -6,23 +6,28 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: Apache Software License",
+]
 name = "nomad-parser-magres"
 dynamic = ["version"]
 description = "A NOMAD plugin for parsing magres files."
 readme = "README.md"
 authors = [
-    { name = "Jose M. Pizarro", email = "jose.pizarro@physik.hu-berlin.de" }
+    { name = "Jose M. Pizarro", email = "jose.pizarro@physik.hu-berlin.de" },
+    { email = "fairmat@physik.hu-berlin.de" },
 ]
-license = { text = "Apache-2.0" }
+license = { file = "LICENSE" }
 requires-python = ">=3.9"
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.9",
-    "License :: OSI Approved :: Apache Software License",
-]
 dependencies = [
-    "nomad-lab@git+https://github.com/nomad-coe/nomad.git@develop",
+    "nomad-lab",
     "nomad-schema-plugin-simulation-workflow@git+https://github.com/nomad-coe/nomad-schema-plugin-simulation-workflow.git@develop",
     "nomad-schema-plugin-run@git+https://github.com/nomad-coe/nomad-schema-plugin-run.git@develop",
 ]
@@ -48,12 +53,51 @@ dev = [
 
 [tool.ruff]
 include = ["src/nomad_parser_magres/*.py", "tests/*.py"]
-lint.select = [
-    "E", # pycodestyle
-    "W", # pycodestyle
-    "PL", # pylint
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
 ]
-lint.ignore = [
+
+# Same as Black.
+line-length = 88
+indent-width = 4
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # isort
+    "I",
+    # pylint
+    "PL",
+]
+
+ignore = [
+    "F403", # 'from module import *' used; unable to detect undefined names
     "E501", # Line too long ({width} > {limit} characters)
     "E701", # Multiple statements on one line (colon)
     "E731", # Do not assign a lambda expression, use a def
@@ -68,14 +112,13 @@ lint.ignore = [
     "PLR1714", # consider-using-in
     "PLR5501", # else-if-used
 ]
-lint.fixable = ["ALL"]
 
-# Same as Black.
-line-length = 88
-indent-width = 4
 
-# Assume Python 3.9
-target-version = "py39"
+fixable = ["ALL"]
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
 
 # this is entirely optional, you can remove this if you wish to
 [tool.ruff.format]
@@ -91,9 +134,15 @@ skip-magic-trailing-comma = false
 # Like Black, automatically detect the appropriate line ending.
 line-ending = "auto"
 
+[tool.setuptools]
+package-dir = { "" = "src" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
-[tool.setuptools.package-data]
-nomad_parser_magres = ['*/nomad_plugin.yaml']
+[project.entry-points.'nomad.plugin']
+
+magres_schema = "nomad_parser_magres.schema_packages:magres_schema"
+magres_parser = "nomad_parser_magres.parsers:magres_parser"
+
+[tool.setuptools_scm]
