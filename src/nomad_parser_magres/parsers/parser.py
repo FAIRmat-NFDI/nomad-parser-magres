@@ -195,7 +195,7 @@ class MagresFileParser(TextParser):
 
 class MagresParser(MatchingParser):
     def __init__(self, *args, **kwargs):
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.magres_file_parser = MagresFileParser()
 
         self._xc_functional_map = {
