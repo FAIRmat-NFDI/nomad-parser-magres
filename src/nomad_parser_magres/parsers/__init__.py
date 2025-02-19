@@ -16,6 +16,6 @@ nomad_parser_magres_plugin = MagresParserEntryPoint(
     description='Entry point for the magres parser.',
     level=1,
     parser_as_interface=False,  # in order to use `child_archives` and auto workflows
-    mainfile_contents_re=r'\$magres-abinitio-v(\d\.)+',
-    # mainfile_name_re='^.*magres',
+    # mainfile_contents_re=r'\$magres-abinitio-v(\d\.)+',
+    mainfile_name_re=r'.*\.magres',
 )
