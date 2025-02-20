@@ -24,6 +24,7 @@ from glob import glob
 from typing import Union
 from nomad.utils import extract_section
 from nomad.datamodel import EntryArchive
+from nomad.parsing import MatchingParser
 from runschema.run import Run
 from nomad.datamodel.metainfo.workflow import Link, TaskReference
 from simulationworkflowschema import (
@@ -100,22 +101,22 @@ def numpy_type_to_json_serializable(
         return float(quantity)
 
 
-class BeyondDFTWorkflowsParser:
+class BeyondDFTWorkflowsParser(MatchingParser):
     """
     Generates automatic beyondDFT (GW, BSE, DMFT) workflows. Main classes for parsers will
     inherit from here if some automatic workflow parsing has been implemented.
     """
 
-    def __init__(
-        self,
-        archive: EntryArchive,
-        _child_archives: dict,
-        _xs_spectra_types: list,
-        logger,
-    ):
-        self.archive = archive
-        self._child_archives = _child_archives
-        self._xs_spectra_types = _xs_spectra_types
+    # def __init__(
+    #     self,
+    #     archive: EntryArchive,
+    #     _child_archives: dict,
+    #     _xs_spectra_types: list,
+    #     logger,
+    # ):
+    archive = EntryArchive()
+    _child_archives = {}
+    _xs_spectra_types = []
 
     def run_workflow_archive(self, workflow_archive: EntryArchive):
         """Initializes the workflow archive by checking if Run exists or not, as well as

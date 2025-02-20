@@ -21,7 +21,6 @@ import numpy as np
 import logging
 
 from nomad.units import ureg
-from nomad.parsing import MatchingParser
 from nomad.parsing.file_parser import TextParser, Quantity
 from runschema.run import Run, Program
 from runschema.method import (
@@ -182,7 +181,7 @@ class MagresFileParser(TextParser):
         ]
 
 
-class MagresParser(MatchingParser):
+class MagresParser(BeyondDFTWorkflowsParser):
     level = 1
 
     def init_parser(self):

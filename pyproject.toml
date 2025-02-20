@@ -46,7 +46,7 @@ dev = [
     "mongoengine>=0.20",
     "pyjwt[crypto]==2.6.0",
     "unidecode==1.3.2",
-    "fastapi==0.92.0",
+    "fastapi",
     "zipstream-new==1.1.5",
     "lxml_html_clean>=0.1.0",
 ]

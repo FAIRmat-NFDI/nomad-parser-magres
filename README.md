@@ -10,7 +10,7 @@ This is a parser plugin for the [magres file format](https://www.ccpnc.ac.uk/out
 
 ### Install the dependencies
 
-Clone the project and, in the workspace folder, create a virtual environment (note this project uses Python 3.9):
+Clone the project and, in the workspace folder, create a virtual environment:
 ```sh
 git clone https://github.com/nomad-coe/nomad-parser-magres.git
 cd nomad-parser-magres
@@ -44,85 +44,5 @@ python -m coverage run -m pytest -sv
 
 ## Development
 
-The plugin is still under development. If you would like to contribute, install the package in editable mode (with the added `-e` flag) with the development dependencies:
+The plugin is still under development. If you would like to contribute, install the package in your [development distro](https://github.com/FAIRmat-NFDI/nomad-distro-template) and follow the instructions to get started.
 
-```sh
-pip install -e .[dev] --index-url https://gitlab.mpcdf.mpg.de/api/v4/projects/2187/packages/pypi/simple
-```
-
-
-### Setting up the plugin on your local installation
-Read the [NOMAD plugin documentation](https://nomad-lab.eu/prod/v1/staging/docs/howto/oasis/plugins_install.html) for all details on how to deploy the plugin on your local NOMAD installation.
-
-To deploy the plugin in your local NOMAD installation, follow the next steps:
-
-1. Add the configurations related to NOMAD. This is already implemented through the plugin definition file ```src/nomad_parser_magres/nomad_plugin.yaml```:
-
-    ```yaml
-    plugin_type: parser
-    name: parsers/magres
-    description: |
-      This plugin is used to parsed magres files into the NOMAD schema.
-    ```
-    and the ```nomad.yaml``` configuration file:
-
-    ```yaml
-    normalize:
-      normalizers:
-        include:
-          - MetainfoNormalizer
-    plugins:
-      # We only include our schema here. Without the explicit include, all plugins will be
-      # loaded. Many build in plugins require more dependencies. Install nomad-lab[parsing]
-      # to make all default plugins work.
-      include:
-        - 'parsers/magres'
-        - 'runschema'
-        - 'simulationworkflowschema'
-      options:
-        parsers/magres:
-          python_package: nomad_parser_magres
-        runschema:
-          python_package: runschema
-        simulationworkflowschema:
-          python_package: simulationworkflowschema
-    ```
-3. Add to your local NOMAD installation the same lines of your plugin ```nomad.yaml``` file.
-4. Add to your local NOMAD installation environment the `PYTHONPATH` to your plugin. This can be done either by running the following command every time you start a new terminal for running the appworker, or by adding it to your virtual environment in the `<path-to-local-nomad-installation>/.pyenv/bin/activate` file:
-
-    ```sh
-    export PYTHONPATH="$PYTHONPATH:<path-to-nomad-parser-magres-cloned-repo>/src"
-    ```
-
-If you are working in this repository, you just need to activate the environment to start working using the ```nomad-parser-magres``` package locally in your own Python scripts.
-
-### Run linting and auto-formatting
-Ruff auto-formatting is also a part of the GitHub workflow actions. Make sure that before you make a Pull Request to add your contributions to this repo, the following commands run in your local without any errors otherwise the workflow action will fail.
-```sh
-ruff check .
-```
-```sh
-ruff format . --check
-```
-
-Alternatively, if you are using VSCode as your IDE, we added the settings configuration file, `.vscode/settings.json`, such that it performs `ruff format` whenever you save progress in a file.
-
-
-<!--
-## Build the python package
-
-The `pyproject.toml` file contains everything that is necessary to turn the project into a pip installable python package. Run the python build tool to create a package distribution:
-
-```
-pip install build
-python -m build --sdist
-```
-
-You can install the package with pip:
-
-```
-pip install dist/nomad-schema-plugin-example-1.0.tar.gz
-```
-
-Read more about python packages, `pyproject.toml`, and how to upload packages to PyPI on the [PyPI documentation](https://packaging.python.org/en/latest/tutorials/packaging-projects/).
--->
