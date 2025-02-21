@@ -42,8 +42,6 @@ from runschema.calculation import (
 )
 
 # For the automatic workflow NMR
-from nomad.search import search
-from nomad.app.v1.models import MetadataRequired
 from nomad_parser_magres.utils import BeyondDFTWorkflowsParser
 
 
@@ -469,6 +467,8 @@ class MagresParser(BeyondDFTWorkflowsParser):
         filepath_stripped = self.filepath.split('raw/')[-1]
         metadata = []
         try:
+            from nomad.search import search
+            from nomad.app.v1.models import MetadataRequired
             upload_id = self.archive.metadata.upload_id
             search_ids = search(
                 owner='visible',
