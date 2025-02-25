@@ -1,4 +1,3 @@
-import json
 import os
 from typing import TYPE_CHECKING, Optional
 
@@ -7,8 +6,6 @@ import numpy as np
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
     from structlog.stdlib import BoundLogger
-
-# from typing import Dict
 
 from nomad.app.v1.models.models import MetadataRequired
 from nomad.config import config
@@ -192,9 +189,81 @@ class MagresFileParser(TextParser):
 
 
 class MagresParser(MatchingParser):
+    """
+    MagresParser is a specialized parser for handling NMR Magres files.
+    It extends the MatchingParser class and provides methods
+    to parse various sections of a Magres file, including atomic cell,
+    model system, exchange-correlation functional, magnetic shieldings,
+    electric field gradients, spin-spin couplings, and magnetic susceptibilities.
+    The parser also checks for unit consistency and initializes the MagresFileParser.
+
+    Attributes:
+        simulation_class: The class representing the simulation section.
+        program_class: The class representing the program section.
+        cell_class: The class representing the cell section.
+        model_system_class: The class representing the model system section.
+        model_method_class: The class representing the model method section.
+        atom_state_class: The class representing the atom state section.
+        magres_outputs_class: The class representing the outputs section.
+        spin_spin_couplings_class: The class representing the spin-spin coupling section.
+        e_field_gradients_class: The class representing the electric field gradients section.
+        e_field_gradient_class: The class representing the electric field gradient section.
+        mag_susceptibility_class: The class representing the magnetic susceptibility section.
+        mag_shielding_tensor: The class representing the magnetic shielding tensor section.
+        workflow_class: The class representing the workflow section.
+        workflow_method_class: The class representing the workflow method section.
+        workflow_results_class: The class representing the workflow results section.
+
+    Methods:
+        __init__(*args, **kwargs): Initializes the MagresParser with optional arguments.
+        _check_units_magres(logger: "BoundLogger") -> None:
+            Checks if the units of the NMR quantities are magres standard.
+        init_parser(logger: "BoundLogger") -> None:
+            Initializes the MagresFileParser with the mainfile and logger.
+        parse_atomic_cell(atoms: Optional[TextParser],
+            logger: "BoundLogger") -> Optional[AtomicCell]:
+            Parses the AtomicCell section from the magres file.
+        parse_model_system(logger: "BoundLogger") -> Optional["MagresParser.model_system_class"]:
+            Parses the model system section from the magres file.
+        parse_xc_functional(calculation_params: Optional[TextParser]) -> list[XCFunctional]:
+            Parses the exchange-correlation functional information from the magres file.
+        parse_model_method(
+            calculation_params: Optional[TextParser]
+            ) -> "MagresParser.model_method_class":
+            Parses the model method section by extracting information about the NMR method.
+        parse_magnetic_shieldings(magres_data: TextParser,
+            cell: "MagresParser.cell_class",
+            logger: "BoundLogger"
+            ) -> list["MagresParser.mag_shielding_tensor"]:
+            Parses the magnetic shieldings from the magres file.
+        parse_electric_field_gradients(magres_data: TextParser,
+            cell: "MagresParser.cell_class",
+            logger: "BoundLogger"
+            ) -> "MagresParser.e_field_gradients_class":
+            Parses the electric field gradients from the magres file.
+        parse_spin_spin_couplings(magres_data: TextParser,
+            cell: "MagresParser.cell_class",
+            logger: "BoundLogger") -> list["MagresParser.spin_spin_couplings_class"]:
+            Parses the spin-spin couplings from the magres file.
+        parse_magnetic_susceptibilities(magres_data: TextParser,
+            logger: "BoundLogger") -> list["MagresParser.mag_susceptibility_class"]:
+            Parses the magnetic susceptibilities from the magres file.
+        parse_outputs(simulation: "MagresParser.simulation_class",
+            logger: "BoundLogger") -> Optional["MagresParser.magres_outputs_class"]:
+            Parses the outputs section and assigns references 
+            to the model method and model system sections.
+        parse_nmr_magres_file_format(nmr_first_principles_archive: "EntryArchive"):
+            Automatically parses the NMR Magres workflow 
+            and links the original NMR first principles entry.
+        parse(filepath: str, archive: "EntryArchive",
+            logger: "BoundLogger", child_archives: dict[str, EntryArchive] = None) -> None:
+            Parses the magres file and populates the archive with the parsed data.
+    """
+
     # Be careful when changing this class references
     # as you might incur in AttributeError exceptions or other issues
-    # Data section:
+    #
+    # Data section classes:
     simulation_class = Simulation
     program_class = Program
     cell_class = Cell
@@ -207,7 +276,7 @@ class MagresParser(MatchingParser):
     e_field_gradient_class = ElectricFieldGradient
     mag_susceptibility_class = MagneticSusceptibility
     mag_shielding_tensor = MagneticShieldingTensor
-    # Worḱflow section
+    # Worḱflow section classes:
     workflow_class = NMRMagRes
     workflow_method_class = NMRMagResMethod
     workflow_results_class = NMRMagResResults
@@ -731,7 +800,7 @@ class MagresParser(MatchingParser):
         filepath: str,
         archive: "EntryArchive",
         logger: "BoundLogger",
-        # child_archives: Dict[str, EntryArchive] = None,
+        child_archives: dict[str, EntryArchive] = None,
     ) -> None:
         self.mainfile = filepath
         self.maindir = os.path.dirname(self.mainfile)
@@ -768,11 +837,6 @@ class MagresParser(MatchingParser):
         outputs = self.parse_outputs(simulation=simulation, logger=logger)
         if outputs is not None:
             simulation.outputs.append(outputs)
-
-        # # Parse JSON file and extract metadata
-        # ccpnc_metadata = self.parse_json_file(filepath=self.mainfile, logger=logger)
-        # if ccpnc_metadata:
-        #     simulation.ccpnc_metadata = ccpnc_metadata
 
         archive.data = simulation
         # ! this will only work after the CASTEP and QE plugin parsers are defined
