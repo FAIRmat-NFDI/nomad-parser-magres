@@ -11,7 +11,6 @@ from nomad.config import config
 from nomad.datamodel.metainfo.basesections import Entity
 from nomad.metainfo import MEnum, Quantity, SchemaPackage, Section, SubSection
 from nomad_simulations.schema_packages.atoms_state import AtomsState
-from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.outputs import Outputs as BaseOutputs
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 
@@ -413,11 +412,6 @@ class Outputs(BaseOutputs):
     magnetic_susceptibilities = SubSection(
         sub_section=MagneticSusceptibility.m_def, repeats=True
     )
-
-
-# Define the CCPNCSimulation class holding CCP-NC specific metadata
-class CCPNCSimulation(Simulation):
-    ccpnc_metadata = SubSection(section_def=CCPNCMetadata)
 
 
 m_package.__init_metainfo__()

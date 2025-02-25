@@ -40,7 +40,8 @@ from nomad_parser_magres.schema_packages.ccpnc_metadata import (
     FreeTextMetadata,
     MaterialProperties,
 )
-from nomad_parser_magres.schema_packages.package import CCPNCSimulation as Simulation
+
+from nomad_simulations.schema_packages.general import Simulation
 from nomad_parser_magres.schema_packages.package import (
     ElectricFieldGradient,
     ElectricFieldGradients,
@@ -194,10 +195,14 @@ class MagresFileParser(TextParser):
 
 
 class MagresParser(MatchingParser):
+
+
+    magres_outputs_class = Outputs
+    spin_spin_couplings_class = SpinSpinCoupling
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.magres_file_parser = MagresFileParser()
-
         self._xc_functional_map = {
             "LDA": ["LDA_C_PZ", "LDA_X_PZ"],
             "PW91": ["GGA_C_PW91", "GGA_X_PW91"],
@@ -214,6 +219,7 @@ class MagresParser(MatchingParser):
             "HSE06": ["HYB_GGA_XC_HSE06"],
             "RSCAN": ["MGGA_X_RSCAN", "MGGA_C_RSCAN"],
         }
+
 
     def _check_units_magres(self, logger: "BoundLogger") -> None:
         """
@@ -493,7 +499,7 @@ class MagresParser(MatchingParser):
 
     def parse_spin_spin_couplings(
         self, magres_data: TextParser, cell: "Cell", logger: "BoundLogger"
-    ) -> list[SpinSpinCoupling]:
+    ) -> list["MagresParser.spin_spin_couplings_class"]:
         """
         Parse the spin-spin couplings from the magres file and assign `entity_ref_1` and `entity_ref_2`
         to the specific `AtomsState`.
@@ -504,7 +510,7 @@ class MagresParser(MatchingParser):
             logger (BoundLogger): The logger to log messages.
 
         Returns:
-            list[SpinSpinCoupling]: The list of parsed `SpinSpinCoupling` sections.
+            list[self.spin_spin_couplings_class]: The list of parsed `self.spin_spin_couplings_class` sections.
         """
         n_atoms = len(cell.atoms_state)
         isc_contributions = {
@@ -531,7 +537,7 @@ class MagresParser(MatchingParser):
             for i, coupled_atom_data in enumerate(data):
                 for j, atom_data in enumerate(coupled_atom_data):
                     values = np.transpose(np.reshape(atom_data[4:], (3, 3)))
-                    sec_isc = SpinSpinCoupling(
+                    sec_isc = self.spin_spin_couplings_class(
                         type=contribution,
                         entity_ref_1=cell.atoms_state[i],
                         entity_ref_2=cell.atoms_state[j],
@@ -566,9 +572,9 @@ class MagresParser(MatchingParser):
 
     def parse_outputs(
         self, simulation: Simulation, logger: "BoundLogger"
-    ) -> Optional[Outputs]:
+    ) -> Optional["MagresParser.magres_outputs_class"]:
         """
-        Parse the `Outputs` section. It extracts the information of the [magres][/magres] block and passes
+        Parse the `self.magres_outputs_class` section. It extracts the information of the [magres][/magres] block and passes
         it as input for parsing the corresponding properties. It also assigns references to the `ModelMethod` and `ModelSystem`
         sections used for the simulation.
 
@@ -577,7 +583,7 @@ class MagresParser(MatchingParser):
             logger (BoundLogger): The logger to log messages.
 
         Returns:
-            Optional[Outputs]: The parsed `Outputs` section.
+            Optional[self.magres_outputs_class]: The parsed `self.magres_outputs_class` section.
         """
         # Initial check on `Simulation.model_system` and store the number of `AtomsState` in the
         # cell for checks of the output properties blocks
@@ -586,7 +592,7 @@ class MagresParser(MatchingParser):
                 "Could not find the `ModelSystem` that the outputs reference to."
             )
             return None
-        outputs = Outputs(
+        outputs = self.magres_outputs_class(
             model_method_ref=simulation.model_method[-1],
             model_system_ref=simulation.model_system[-1],
         )
@@ -626,7 +632,7 @@ class MagresParser(MatchingParser):
             efg.model_method_ref = simulation.model_method[-1]
             outputs.electric_field_gradients.append(efg)
 
-        # Parse `SpinSpinCoupling`
+        # Parse `self.spin_spin_couplings_class`
         isc = self.parse_spin_spin_couplings(
             magres_data=magres_data, cell=cell, logger=logger
         )
@@ -695,44 +701,6 @@ class MagresParser(MatchingParser):
 
         self.archive.workflow2 = workflow
 
-    def parse_json_file(self, filepath: str, logger: "BoundLogger") -> Optional[CCPNCMetadata]:
-        """Parse the JSON file and extract relevant information."""
-        magres_json_file = get_files(
-            pattern="MRD*.json", filepath=filepath, stripname=self.basename
-        )
-        if not magres_json_file:
-            logger.warning("No JSON file found.")
-            return None
-        with open(magres_json_file[0]) as f:
-            magres_json_data = json.load(f)
-        ccpnc_metadata = CCPNCMetadata()
-        material_properties = MaterialProperties()
-        orcid = ORCID()
-        ccpnc_record = CCPNCRecord()
-        external_database_reference = ExternalDatabaseReference()
-        free_text_metadata = FreeTextMetadata()
-
-        material_properties.chemical_name = magres_json_data.get("chemname", "")
-        material_properties.formula = magres_json_data.get("formula", "")
-        material_properties.stoichiometry = magres_json_data.get("stochiometry", "")
-        material_properties.elements_ratios = magres_json_data.get("elements_ratios", "")
-        # material_properties.chemical_name_tokens =
-        orcid.orcid_id = magres_json_data.get("ORCID", "")
-        # ccpnc_record.visible =
-        ccpnc_record.immutable_id = magres_json_data.get("immutable_id", "")
-        version_metadata = magres_json_data.get("version_metadata", {})
-        external_database_reference.external_database_name = version_metadata.get("extref_type", "")
-        external_database_reference.external_database_reference_code = version_metadata.get("extref_code", "")
-        free_text_metadata.uploader_author_notes = version_metadata.get("notes", "")
-        free_text_metadata.structural_descriptor_notes = version_metadata.get("chemform", "")
-
-        ccpnc_metadata.material_properties = material_properties
-        ccpnc_metadata.orcid = orcid
-        ccpnc_metadata.ccpnc_record = ccpnc_record
-        ccpnc_metadata.external_database_reference = external_database_reference
-        ccpnc_metadata.free_text_metadata = free_text_metadata
-        return ccpnc_metadata
-
     def parse(
         self,
         filepath: str,
@@ -771,15 +739,15 @@ class MagresParser(MatchingParser):
         model_method = self.parse_model_method(calculation_params=calculation_params)
         simulation.model_method.append(model_method)
 
-        # `Outputs` parsing
+        # `self.magres_outputs` parsing
         outputs = self.parse_outputs(simulation=simulation, logger=logger)
         if outputs is not None:
             simulation.outputs.append(outputs)
 
-        # Parse JSON file and extract metadata
-        ccpnc_metadata = self.parse_json_file(filepath=self.mainfile, logger=logger)
-        if ccpnc_metadata:
-            simulation.ccpnc_metadata = ccpnc_metadata
+        # # Parse JSON file and extract metadata
+        # ccpnc_metadata = self.parse_json_file(filepath=self.mainfile, logger=logger)
+        # if ccpnc_metadata:
+        #     simulation.ccpnc_metadata = ccpnc_metadata
 
         archive.data = simulation
         # ! this will only work after the CASTEP and QE plugin parsers are defined
@@ -820,14 +788,3 @@ class MagresParser(MatchingParser):
                     break
             except Exception:
                 continue
-
-        # Populate `CCPNCMetadata` (note the `pattern` has to match the aux file generated by the MongoDB CCP-NC)
-        magres_json_file = get_files(
-            pattern="magres*.json", filepath=self.mainfile, stripname=self.basename
-        )
-        if magres_json_file is not None:
-            ccpnc_metadata = CCPNCMetadata()
-            # TODO: populate `ccpnc_metadata` model from `magres_json_file` HERE
-            # ...
-            # ...
-            simulation.ccpnc_metadata = ccpnc_metadata
