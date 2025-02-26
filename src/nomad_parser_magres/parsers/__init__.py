@@ -11,7 +11,7 @@ class MagresParserEntryPoint(ParserEntryPoint):
         return MagresParser(**self.dict())
 
 
-nomad_parser_magres_plugin = MagresParserEntryPoint(
+magres_parser = MagresParserEntryPoint(
     name='MagresParserEntryPoint',
     description='Entry point for the magres parser.',
     level=1,

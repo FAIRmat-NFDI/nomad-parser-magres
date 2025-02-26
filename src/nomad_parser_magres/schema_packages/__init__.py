@@ -11,7 +11,7 @@ class MagresSchemaPackageEntryPoint(SchemaPackageEntryPoint):
         return m_package
 
 
-nomad_parser_magres_schema = MagresSchemaPackageEntryPoint(
+magres_schema = MagresSchemaPackageEntryPoint(
     name='MagresSchemaPackageEntryPoint',
     description='Entry point for the magres code-specific schema.',
 )
