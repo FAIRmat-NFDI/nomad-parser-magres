@@ -7,13 +7,11 @@ if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
     from structlog.stdlib import BoundLogger
 
-from nomad.app.v1.models.models import MetadataRequired
 from nomad.config import config
 from nomad.datamodel import EntryArchive
 from nomad.datamodel.metainfo.workflow import Link, TaskReference
 from nomad.parsing import MatchingParser
 from nomad.parsing.file_parser import Quantity, TextParser
-from nomad.search import search
 from nomad.units import ureg
 from nomad.utils import extract_section
 from nomad_simulations.schema_packages.atoms_state import AtomsState
@@ -844,6 +842,8 @@ class MagresParser(MatchingParser):
         filepath_stripped = self.mainfile.split("raw/")[-1]
         metadata = []
         try:
+            from nomad.app.v1.models.models import MetadataRequired
+            from nomad.search import search
             upload_id = self.archive.metadata.upload_id
             search_ids = search(
                 owner="visible",
