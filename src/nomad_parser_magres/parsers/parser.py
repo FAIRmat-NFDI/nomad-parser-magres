@@ -40,10 +40,6 @@ from nomad_parser_magres.schema_packages.workflow import (
 
 re_float = r" *[-+]?\d+\.\d*(?:[Ee][-+]\d+)? *"
 
-configuration = config.get_plugin_entry_point(
-    "nomad_parser_magres.parsers:nomad_parser_magres_plugin"
-)
-
 
 class MagresFileParser(TextParser):
     def __init__(self):

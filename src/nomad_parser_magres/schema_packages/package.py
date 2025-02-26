@@ -15,10 +15,6 @@ from nomad_simulations.schema_packages.outputs import Outputs as BaseOutputs
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 
 
-configuration = config.get_plugin_entry_point(
-    "nomad_parser_magres.schema_packages:nomad_parser_magres_schema"
-)
-
 m_package = SchemaPackage()
 
 
