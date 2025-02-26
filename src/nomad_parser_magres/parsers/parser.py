@@ -24,16 +24,6 @@ from nomad_simulations.schema_packages.model_method import (
 from nomad_simulations.schema_packages.model_system import AtomicCell, Cell, ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import KMesh, KSpace
 
-# utility function used to get auxiliary files next to the `mainfile`
-from nomad_parser_magres.parsers.utils import get_files
-from nomad_parser_magres.schema_packages.ccpnc_metadata import (
-    ORCID,
-    CCPNCMetadata,
-    CCPNCRecord,
-    ExternalDatabaseReference,
-    FreeTextMetadata,
-    MaterialProperties,
-)
 from nomad_parser_magres.schema_packages.package import (
     ElectricFieldGradient,
     ElectricFieldGradients,
