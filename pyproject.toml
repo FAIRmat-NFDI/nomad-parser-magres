@@ -132,8 +132,8 @@ where = ["src"]
 write_to = "src/nomad_parser_magres/_version.py"
 
 [project.entry-points.'nomad.plugin']
-magres_parser = "nomad_parser_magres.parsers:nomad_parser_magres_plugin"
-magres_schema = "nomad_parser_magres.schema_packages:nomad_parser_magres_schema"
+magres_parser = "nomad_parser_magres.parsers:magres_parser"
+magres_schema = "nomad_parser_magres.schema_packages:magres_schema"
 
 
 [tool.cruft]
