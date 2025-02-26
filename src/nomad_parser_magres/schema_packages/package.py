@@ -59,40 +59,6 @@ def resolve_name_from_entity_ref(entities: list[Entity], logger: "BoundLogger") 
     return name
 
 
-class MagneticShieldingIsotropic(PhysicalProperty):
-    """
-    The isotropic part of the `MagneticShieldingTensor`. This is 1/3 of the trace of the magnetic
-    shielding tensor (see `extract_isotropic_part()` function in `MagneticShieldingTensor`).
-
-    See, e.g, https://pubs.acs.org/doi/10.1021/cr300108a.
-
-    This property will appear as a list under `Outputs` where each of the elements correspond to an atom in the unit cell
-    The specific atom is known by defining the reference to the specific `AtomsState` under `ModelSystem.cell.atoms_state`
-    using `entity_ref`.
-    """
-
-    value = Quantity(
-        type=np.float64,
-        unit="dimensionless",
-        description="""
-        Value of the isotropic part of the magnetic shielding tensor per atom.
-        """,
-    )
-
-    def __init__(
-        self, m_def: "Section" = None, m_context: "Context" = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-
-    def normalize(self, archive: "EntryArchive", logger: "BoundLogger") -> None:
-        super().normalize(archive, logger)
-
-        # Resolve `name` to be from the `entity_ref`
-        self.name = resolve_name_from_entity_ref(
-            entities=[self.entity_ref], logger=logger
-        )
-
-
 class MagneticShieldingTensor(PhysicalProperty):
     """
     Nuclear response of a material to shield the effects of an applied external field. This is a tensor 3x3 related with
@@ -109,9 +75,20 @@ class MagneticShieldingTensor(PhysicalProperty):
 
     value = Quantity(
         type=np.float64,
+        shape=[3, 3],
         unit="dimensionless",
         description="""
         Value of the magnetic shielding tensor per atom.
+        """,
+    )
+    value_isotropic = Quantity(
+        type=np.float64,
+        unit="dimensionless",
+        description="""
+            The isotropic part of the `MagneticShieldingTensor`. This is 1/3 of the trace of the magnetic
+            shielding tensor (see `extract_isotropic_part()` function in `MagneticShieldingTensor`).
+
+            See, e.g, https://pubs.acs.org/doi/10.1021/cr300108a.
         """,
     )
 
@@ -119,12 +96,12 @@ class MagneticShieldingTensor(PhysicalProperty):
         self, m_def: "Section" = None, m_context: "Context" = None, **kwargs
     ) -> None:
         super().__init__(m_def, m_context, **kwargs)
-        self.rank = [3, 3]  # ! move this to definitions
+        self.rank = [3, 3]  # ! this info is in the shape attribute of the Quantity
         self.name = self.m_def.name
 
     def extract_isotropic_part(
         self, logger: "BoundLogger"
-    ) -> Optional[MagneticShieldingIsotropic]:
+    ) -> Optional[float]:
         """
         Extract the isotropic part of the magnetic shielding tensor. This is 1/3 of the trace of the magnetic
         shielding tensor `value`.
@@ -133,16 +110,14 @@ class MagneticShieldingTensor(PhysicalProperty):
             logger ('BoundLogger'): The logger to log messages.
 
         Returns:
-            (Optional[MagneticShieldingIsotropic]): The isotropic part of the magnetic shielding tensor.
+            (Optional[float]): The isotropic part of the magnetic shielding tensor.
         """
-        isotropic = MagneticShieldingIsotropic()
         try:
             # Calculate the isotropic value
-            isotropic.value = np.trace(np.array(self.value)) / 3.0
+            isotropic = np.trace(np.array(self.value)) / 3.0
         except Exception:
             logger.warning("Could not extract the trace of the `value` tensor.")
             return None
-        isotropic.physical_property_ref = self  # derived quantity
         return isotropic
 
     def normalize(self, archive: "EntryArchive", logger: "BoundLogger") -> None:
@@ -153,11 +128,11 @@ class MagneticShieldingTensor(PhysicalProperty):
             entities=[self.entity_ref], logger=logger
         )
 
-        # `MagneticShieldingIsotropic` extraction
+        # isotropic value extraction
         isotropic = self.extract_isotropic_part(logger)
         if isotropic is not None:
             logger.info(f"Appending isotropic value for {self.name}")
-            self.m_parent.magnetic_shieldings_isotropic.append(isotropic)
+            self.value_isotropic = isotropic
         else:
             logger.warning(f"Isotropic value extraction failed for {self.name}")
 
@@ -403,9 +378,6 @@ class Outputs(BaseOutputs):
 
     magnetic_shieldings = SubSection(
         sub_section=MagneticShieldingTensor.m_def, repeats=True
-    )
-    magnetic_shieldings_isotropic = SubSection(
-        sub_section=MagneticShieldingIsotropic.m_def, repeats=True
     )
     electric_field_gradients = SubSection(
         sub_section=ElectricFieldGradient.m_def, repeats=True
