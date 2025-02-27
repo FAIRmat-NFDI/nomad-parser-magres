@@ -84,14 +84,17 @@ def test_single_point_ethanol(parser):
     assert output.model_system_ref == model_system
     assert output.model_method_ref == dft
     #   Properties
-    assert output.m_xpath('magnetic_shieldings', dict=False) is not None
     assert len(output.m_xpath('magnetic_shieldings', dict=False)) == 9  # per atom
     for property_name in [
         'electric_field_gradients',
+        'magnetic_shieldings',
+    ]:
+        assert output.m_xpath(property_name, dict=False) is not None
+    for property_name in [
         'spin_spin_couplings',
         'magnetic_susceptibilities',
     ]:
-        assert output.m_xpath(property_name, dict=False) is not None
+        assert output.m_xpath(property_name, dict=False) is None
     #       MagneticShieldingTensor
     for i, ms in enumerate(output.magnetic_shieldings):
         assert ms.entity_ref.chemical_symbol == labels[i]
