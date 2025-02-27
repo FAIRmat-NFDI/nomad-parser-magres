@@ -510,7 +510,7 @@ class MagresParser(MatchingParser):
         magnetic_shieldings = []
         for i, atom_data in enumerate(data):
             # values = np.transpose(np.reshape(atom_data[2:], (3, 3)))
-            values = np.reshape(atom_data[2:], (3, 3))  # No need to transpose
+            values = np.transpose(np.reshape(atom_data[2:], (3, 3)))
             sec_ms = self.mag_shielding_tensor(entity_ref=cell.atoms_state[i])
             sec_ms.value = values * 1e-6 * ureg("dimensionless")
             magnetic_shieldings.append(sec_ms)
