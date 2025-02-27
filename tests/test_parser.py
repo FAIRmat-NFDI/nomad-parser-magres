@@ -91,7 +91,7 @@ def test_single_point_ethanol(parser):
         'spin_spin_couplings',
         'magnetic_susceptibilities',
     ]:
-        assert output.m_xpath(property_name, dict=False) is None
+        assert output.m_xpath(property_name, dict=False) is not None
     #       MagneticShieldingTensor
     for i, ms in enumerate(output.magnetic_shieldings):
         assert ms.entity_ref.chemical_symbol == labels[i]
