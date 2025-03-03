@@ -2,23 +2,23 @@ import os
 from glob import glob
 
 
-def get_files(pattern: str, filepath: str, stripname: str = '', deep: bool = True):
+def get_files(pattern: str, filepath: str, stripname: str = '', deeper: bool = True, file_range: int = 10) -> list:
     """Get files following the `pattern` with respect to the file `stripname` (usually this
-    being the mainfile of the given parser) up to / down from the `filepath` (`deep=True` going
-    down, `deep=False` up)
+    being the mainfile of the given parser) up to / down from the `filepath` (`deeper=True` going
+    down, `deeper=False` up)
 
     Args:
         pattern (str): targeted pattern to be found
         filepath (str): filepath to start the search
         stripname (str, optional): name with respect to which do the search. Defaults to ''.
-        deep (bool, optional): boolean setting the path in the folders to scan (down or up). Defaults to down=True.
+        deeper (bool, optional): boolean setting the path in the folders to scan (down or up). Defaults to down=True.
 
     Returns:
         list: List of found files.
     """
-    for _ in range(10):
+    for _ in range(file_range):
         filenames = glob(f'{os.path.dirname(filepath)}/{pattern}')
-        pattern = os.path.join('**' if deep else '..', pattern)
+        pattern = os.path.join('**' if deeper else '..', pattern)
         if filenames:
             break
 

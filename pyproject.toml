@@ -14,7 +14,7 @@ name = "nomad-parser-magres"
 description = "NOMAD parser plugin for the magres file format."
 dynamic = ["version"]
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 authors = [
     { name = "FAIRmat", email = "fairmat@physik.hu-berlin.de" },
     { name = "The CCP-NC Authors" },
