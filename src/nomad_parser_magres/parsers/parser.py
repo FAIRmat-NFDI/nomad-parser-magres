@@ -559,7 +559,7 @@ class MagresParser(MatchingParser):
                 sec_efg = self.e_field_gradient_class(
                     type=contribution, entity_ref=cell.atoms_state[i]
                 )
-                sec_efg.value = values * 9.717362e21 * ureg("V/m^2")
+                sec_efg.value = np.transpose(values) * 9.717362e21 * ureg("V/m^2")
                 # electric_field_gradients.append(sec_efg)
                 if contribution == "total":
                     electric_field_gradients.efg_total.append(sec_efg)

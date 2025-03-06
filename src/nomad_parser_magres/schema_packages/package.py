@@ -14,6 +14,9 @@ from nomad_simulations.schema_packages.atoms_state import AtomsState
 from nomad_simulations.schema_packages.outputs import Outputs as BaseOutputs
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 
+from nomad.datamodel.data import (
+    ArchiveSection
+)
 
 m_package = SchemaPackage()
 
@@ -156,6 +159,7 @@ class ElectricFieldGradient(PhysicalProperty):
     value = Quantity(
         type=np.float64,
         unit="volt / meter ** 2",
+        shape=[3, 3],
         description="""
         Value of the electric field gradient (EFG) for each `contribution` per unit area.
         """,
@@ -210,7 +214,7 @@ class ElectricFieldGradient(PhysicalProperty):
         # TODO add normalization to extract `quadrupolar_coupling_constant` and `asymmetry_parameter`
 
 
-class ElectricFieldGradients(BaseOutputs):
+class ElectricFieldGradients(ArchiveSection):
     """
     Represents the electric field gradients (EFG) data extracted from a magres file.
 
@@ -282,7 +286,7 @@ class SpinSpinCoupling(PhysicalProperty):
     reduced_value = Quantity(
         type=np.float64,
         unit="kelvin**2 / joule",
-        shape=[3, 3],  # dynamical shape only works for `PhysicalProperty.value`
+        shape=[3, 3], 
         description="""
         Reduced value of the indirect spin-spin couplings for each contribution. It relates with the
         normal value as:
