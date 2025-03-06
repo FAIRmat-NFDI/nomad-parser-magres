@@ -8,15 +8,12 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 from nomad.config import config
+from nomad.datamodel.data import ArchiveSection
 from nomad.datamodel.metainfo.basesections import Entity
 from nomad.metainfo import MEnum, Quantity, SchemaPackage, Section, SubSection
 from nomad_simulations.schema_packages.atoms_state import AtomsState
 from nomad_simulations.schema_packages.outputs import Outputs as BaseOutputs
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
-
-from nomad.datamodel.data import (
-    ArchiveSection
-)
 
 m_package = SchemaPackage()
 
@@ -98,7 +95,7 @@ class MagneticShieldingTensor(PhysicalProperty):
 
     def extract_isotropic_part(
         self, logger: "BoundLogger"
-    ) -> Optional[float]:
+    ) -> float | None:
         """
         Extract the isotropic part of the magnetic shielding tensor. This is 1/3 of the trace of the magnetic
         shielding tensor `value`.
@@ -286,7 +283,7 @@ class SpinSpinCoupling(PhysicalProperty):
     reduced_value = Quantity(
         type=np.float64,
         unit="kelvin**2 / joule",
-        shape=[3, 3], 
+        shape=[3, 3],
         description="""
         Reduced value of the indirect spin-spin couplings for each contribution. It relates with the
         normal value as:

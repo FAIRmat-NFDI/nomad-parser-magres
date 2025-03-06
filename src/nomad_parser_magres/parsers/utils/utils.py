@@ -2,7 +2,13 @@ import os
 from glob import glob
 
 
-def get_files(pattern: str, filepath: str, stripname: str = '', deeper: bool = True, file_range: int = 10) -> list:
+def get_files(
+    pattern: str,
+    filepath: str,
+    stripname: str = '',
+    deeper: bool = True,
+    file_range: int = 10,
+) -> list:
     """Get files following the `pattern` with respect to the file `stripname` (usually this
     being the mainfile of the given parser) up to / down from the `filepath` (`deeper=True` going
     down, `deeper=False` up)

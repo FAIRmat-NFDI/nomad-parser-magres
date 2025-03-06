@@ -234,10 +234,10 @@ class MagresParser(MatchingParser):
             Parses the magnetic susceptibilities from the magres file.
         parse_outputs(simulation: "MagresParser.simulation_class",
             logger: "BoundLogger") -> Optional["MagresParser.magres_outputs_class"]:
-            Parses the outputs section and assigns references 
+            Parses the outputs section and assigns references
             to the model method and model system sections.
         parse_nmr_magres_file_format(nmr_first_principles_archive: "EntryArchive"):
-            Automatically parses the NMR Magres workflow 
+            Automatically parses the NMR Magres workflow
             and links the original NMR first principles entry.
         parse(filepath: str, archive: "EntryArchive",
             logger: "BoundLogger", child_archives: dict[str, EntryArchive] = None) -> None:
@@ -328,8 +328,8 @@ class MagresParser(MatchingParser):
         self.magres_file_parser.logger = logger
 
     def parse_atomic_cell(
-        self, atoms: Optional[TextParser], logger: "BoundLogger"
-    ) -> Optional[AtomicCell]:
+        self, atoms: TextParser | None, logger: "BoundLogger"
+    ) -> AtomicCell | None:
         """
         Parse the `AtomicCell` section from the magres file.
 
@@ -405,7 +405,7 @@ class MagresParser(MatchingParser):
         return model_system
 
     def parse_xc_functional(
-        self, calculation_params: Optional[TextParser]
+        self, calculation_params: TextParser | None
     ) -> list[XCFunctional]:
         """
         Parse the exchange-correlation functional information from the magres file. This
@@ -434,7 +434,7 @@ class MagresParser(MatchingParser):
         return xc_sections
 
     def parse_model_method(
-        self, calculation_params: Optional[TextParser]
+        self, calculation_params: TextParser | None
     ) -> "MagresParser.model_method_class":
         """
         Parse the `MagresParser.model_method_class` section by extracting information about the NMR method: basis set,
