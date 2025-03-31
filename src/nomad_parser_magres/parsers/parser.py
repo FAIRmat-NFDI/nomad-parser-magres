@@ -844,8 +844,8 @@ class MagresParser(MatchingParser):
             )
             return
         for entry_id, mainfile in metadata:
-            if mainfile == filepath_stripped:  # we skip the current parsed mainfile
-                continue
+            #if mainfile == filepath_stripped:  # we skip the current parsed mainfile
+            #    continue
             # We try to load the archive from its context and connect both the CASTEP and the magres entries
             # ? add more checks on the system information for the connection?
             try:
