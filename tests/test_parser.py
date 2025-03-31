@@ -1,27 +1,12 @@
-#
-# Copyright The NOMAD Authors.
-#
-# This file is part of NOMAD. See https://nomad-lab.eu for further info.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-
-import pytest
-import numpy as np
 import os
 
+import numpy as np
+import pytest
 from nomad.datamodel import EntryArchive
-from nomad_parser_magres.parser import MagresParser
+
+from nomad_parser_magres.parsers.parser import MagresParser
+
+from . import logger
 
 
 def approx(value, abs=0, rel=1e-6):
@@ -36,50 +21,112 @@ def parser():
 def test_single_point_ethanol(parser):
     archive = EntryArchive()
     parser.parse(
-        os.path.join(os.path.dirname(__file__), 'data/ethanol_nmr.magres'),
+        os.path.join('tests', 'data', 'ethanol_nmr.magres'),
         archive,
-        None,
+        logger,
     )
-    sec_run = archive.run[-1]
+    simulation = archive.data
 
-    # Program testing
-    assert sec_run.program.name == 'CASTEP'
-    assert sec_run.program.version == '24.1'
+    # Program
+    assert simulation.program.name == 'CASTEP'
+    assert simulation.program.version == '24.1'
 
-    # System testing
-    assert len(sec_run.system) == 1
-    sec_system = sec_run.system[-1]
-    assert sec_system.atoms.labels == ['H', 'H', 'H', 'H', 'H', 'H', 'C', 'C', 'O']
-    assert sec_system.atoms.positions[0][1].magnitude == approx(4.3583475749937473e-10)
+    # ModelSystem
+    assert len(simulation.model_system) == 1
+    model_system = simulation.model_system[0]
+    assert model_system.is_representative
+    #   Cell
+    assert len(model_system.cell) == 1
+    atomic_cell = model_system.cell[0]
+    assert np.isclose(
+        atomic_cell.positions[3].to('angstrom').magnitude,
+        np.array([3.57828732, 5.39462129, 5.22149125]),
+    ).all()
+    assert np.isclose(
+        atomic_cell.lattice_vectors.to('angstrom').magnitude,
+        np.array(
+            [
+                [5.29177211e00, 0.00000000e00, 0.00000000e00],
+                [3.24027589e-16, 5.29177211e00, 0.00000000e00],
+                [3.24027589e-16, 3.24027589e-16, 5.29177211e00],
+            ]
+        ),
+    ).all()
+    assert atomic_cell.periodic_boundary_conditions == [True, True, True]
+    #       AtomsState
+    assert len(atomic_cell.atoms_state) == 9
+    labels = ['H', 'H', 'H', 'H', 'H', 'H', 'C', 'C', 'O']
+    for index, symbol in enumerate(labels):
+        assert atomic_cell.atoms_state[index].chemical_symbol == symbol
 
-    # Method testing
-    assert len(sec_run.method) == 1
-    sec_method = sec_run.method[-1]
-    assert sec_method.label == 'NMR'
-    assert sec_method.dft.xc_functional.exchange[-1].name == 'LDA_X_PZ'
-    assert sec_method.dft.xc_functional.correlation[-1].name == 'LDA_C_PZ'
-    assert (sec_method.k_mesh.grid == np.array([1, 1, 1])).all()
-    assert sec_method.electrons_representation[-1].type == 'plane waves'
+    # ModelMethod
+    assert len(simulation.model_method) == 1
+    assert simulation.model_method[0].m_def.name == 'DFT'
+    assert simulation.model_method[0].name == 'NMR'
+    dft = simulation.model_method[0]
+    assert len(dft.xc_functionals) == 2
+    assert dft.xc_functionals[0].name == 'correlation'
+    assert dft.xc_functionals[0].libxc_name == 'LDA_C_PZ'
+    assert dft.xc_functionals[1].name == 'exchange'
+    assert dft.xc_functionals[1].libxc_name == 'LDA_X_PZ'
+    #   NumericalSettings
+    assert len(dft.numerical_settings) == 1
+    assert dft.numerical_settings[0].m_def.name == 'KSpace'
+    k_space = dft.numerical_settings[0]
+    #       KMesh
+    assert len(k_space.k_mesh) == 1
+    assert (k_space.k_mesh[0].grid == [1, 1, 1]).all()
+    assert (k_space.k_mesh[0].offset == [0.25, 0.25, 0.25]).all()
 
-    # Calculation testing
-    assert len(sec_run.calculation) == 1
-    sec_calc = sec_run.calculation[-1]
-    assert sec_calc.system_ref == sec_system
-    assert sec_calc.method_ref == sec_method
-    assert sec_calc.magnetic_shielding and sec_calc.electric_field_gradient
-    assert not sec_calc.spin_spin_coupling and not sec_calc.magnetic_susceptibility
-    # Magnetic shielding testing
-    assert len(sec_calc.magnetic_shielding) == 1
-    sec_ms = sec_calc.magnetic_shielding[-1]
-    assert sec_ms.atoms.shape == (9, 2)
-    assert (sec_ms.atoms[3] == ['H', '4']).all()
-    assert sec_ms.value.shape == (9, 3, 3)
-    assert sec_ms.value[4][2][1] == approx(-8.661757088509511e-06)
-    assert sec_ms.isotropic_value.shape == (9,)
-    assert sec_ms.isotropic_value[4] == approx(3.035708828276491e-05)
-    # Electric field gradient testing
-    assert len(sec_calc.electric_field_gradient) == 1
-    sec_efg = sec_calc.electric_field_gradient[-1]
-    assert sec_efg.contribution == 'total'
-    assert sec_efg.value.shape == sec_ms.value.shape
-    assert sec_efg.value[4][2][1].magnitude == approx(-3.0317252106856217e21)
+    # Outputs
+    assert len(simulation.outputs) == 1
+    output = simulation.outputs[0]
+    assert output.model_system_ref == model_system
+    assert output.model_method_ref == dft
+    #   Properties
+    assert len(output.m_xpath('magnetic_shieldings', dict=False)) == 9  # per atom
+    for property_name in [
+        'electric_field_gradients',
+        'magnetic_shieldings',
+    ]:
+        assert output.m_xpath(property_name, dict=False) is not None
+    for property_name in [
+        'spin_spin_couplings',
+        'magnetic_susceptibilities',
+    ]:
+        assert output.m_xpath(property_name, dict=False) is None
+    #       MagneticShieldingTensor
+    for i, ms in enumerate(output.magnetic_shieldings):
+        assert ms.entity_ref.chemical_symbol == labels[i]
+    assert np.isclose(
+        output.magnetic_shieldings[3].value.magnitude,
+        np.array(
+            [
+                [3.15771355e-05, -5.88661144e-07, 1.53864065e-06],
+                [-4.68026860e-07, 2.06392827e-05, 2.43151206e-06],
+                [7.98507383e-08, 9.14578022e-07, 2.48414650e-05],
+            ]
+        ),
+    ).all()
+    assert np.isclose(
+        output.electric_field_gradients[0].efg_total[5].value.magnitude,
+        np.array(
+            [
+                [
+                    -1.3166582037591257e21,
+                    1.30299532627198460000e20,
+                    1.9811002968672890000e19,
+                ],
+                [
+                    1.30299532627198460000e20,
+                    1.6767151575540092e21,
+                    -1.644761535344864e21,
+                ],
+                [
+                    1.9811002968672890000e19,
+                    -1.644761535344864e21,
+                    -3.60056953794901300000e20,
+                ],
+            ]
+        ),
+    ).all()

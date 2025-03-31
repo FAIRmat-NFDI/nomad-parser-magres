@@ -1,10 +1,20 @@
-site_name: Documentation
-site_description: |
-  The documentation for the NOMAD parser for magres files.
-site_author: The NOMAD Authors
-repo_url: https://github.com/nomad-coe/nomad-parser-magres
+site_name: nomad-parser-magres
+site_description: NOMAD parser plugin for the magres file format.
+site_author: CCP-NC
+
+repo_url: https://github.com/CCP-NC/nomad-parser-magres
+edit_uri: ""
+
 nav:
   - Home: index.md
+  - Tutorial: tutorial/tutorial.md
+  - How-to guides:
+      - Install this Plugin: how_to/install_this_plugin.md
+      - Use this Plugin: how_to/use_this_plugin.md
+      - Contribute to this plugin: how_to/contribute_to_this_plugin.md
+      - Contribute to the documentation: how_to/contribute_to_the_documentation.md
+  - Explanation: explanation/explanation.md
+  - Reference: reference/references.md
 plugins:
   - search
 theme:
@@ -19,6 +29,8 @@ theme:
   features:
     - navigation.instant
   custom_dir: docs/theme
+  icon:
+    repo: fontawesome/brands/github
 markdown_extensions:
   - attr_list
   - md_in_html
