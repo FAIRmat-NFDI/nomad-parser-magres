@@ -24,7 +24,7 @@ from nomad_simulations.schema_packages.model_method import (
 from nomad_simulations.schema_packages.model_system import AtomicCell, Cell, ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import KMesh, KSpace
 
-from nomad_parser_magres.schema_packages.package import (
+from nomad_nmr_schema.schema_packages.schema_package import (
     ElectricFieldGradient,
     ElectricFieldGradients,
     MagneticShieldingTensor,
