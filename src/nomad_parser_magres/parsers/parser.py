@@ -42,11 +42,12 @@ from nomad_parser_magres.schema_packages.workflow import (
 
 re_float = r" *[-+]?\d+\.\d*(?:[Ee][-+]\d+)? *"
 
+MIN_SUS_SUPPORTED_VERSION = "7.4.1"
 
 def is_version_supported(version_str):
     try:
         version = parse_version(version_str) 
-        return version >= parse_version("7.4.1")
+        return version >= parse_version(MIN_SUS_SUPPORTED_VERSION)
     except Exception as e:
         return False
 
