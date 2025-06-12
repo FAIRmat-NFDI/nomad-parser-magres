@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main # Triggers deployment on push to the main branch
+  workflow_dispatch:
  
 permissions:
   contents: write
