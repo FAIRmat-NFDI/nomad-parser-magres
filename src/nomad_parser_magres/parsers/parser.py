@@ -3,6 +3,8 @@ from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 
+from packaging.version import parse as parse_version
+
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
     from structlog.stdlib import BoundLogger
@@ -40,6 +42,14 @@ from nomad_parser_magres.schema_packages.workflow import (
 
 re_float = r" *[-+]?\d+\.\d*(?:[Ee][-+]\d+)? *"
 
+MIN_SUS_SUPPORTED_VERSION = "7.4.1"
+
+def is_version_supported(version_str):
+    try:
+        version = parse_version(version_str) 
+        return version >= parse_version(MIN_SUS_SUPPORTED_VERSION)
+    except Exception as e:
+        return False
 
 class MagresFileParser(TextParser):
     def __init__(self):
@@ -715,11 +725,12 @@ class MagresParser(MatchingParser):
             outputs.spin_spin_couplings = isc
 
         # Parse `MagresParser.mag_susceptibility_class`
-        mag_sus = self.parse_magnetic_susceptibilities(
-            magres_data=magres_data, logger=logger
-        )
-        if len(mag_sus) > 0:
-            outputs.magnetic_susceptibilities = mag_sus
+        if simulation.program.name == "CASTEP" or (simulation.program.name == "QE" and is_version_supported(simulation.program.version)):
+            mag_sus = self.parse_magnetic_susceptibilities(
+                magres_data=magres_data, logger=logger
+            )
+            if len(mag_sus) > 0:
+                outputs.magnetic_susceptibilities = mag_sus
 
         return outputs
 
@@ -797,9 +808,10 @@ class MagresParser(MatchingParser):
         # Adding self.simulation_class to data
         simulation = self.simulation_class()
         calculation_params = self.magres_file_parser.get("calculation", {})
-        if calculation_params.get("code", "") != "CASTEP":
+
+        if calculation_params.get("code", "") not in ["CASTEP","QE"]:
             logger.error(
-                "Only CASTEP-based NMR simulations are supported by the magres parser."
+                "Only CASTEP-based NMR simulations and QE-GIPAW simulations are supported by the magres parser."
             )
             return
         simulation.program = self.program_class(
