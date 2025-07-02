@@ -1080,8 +1080,11 @@ class MagresParser(MatchingParser):
         return [sec_sus]
 
     def parse_outputs(
-        self, simulation: "MagresParser.simulation_class", logger: "BoundLogger"
-    ) -> Optional["MagresParser.magres_outputs_class"]:
+        self,
+        simulation: 'MagresParser.simulation_class',
+        atomsstate: 'MagresParser.atom_state_class',
+        logger: 'BoundLogger',
+    ) -> Optional['MagresParser.magres_outputs_class']:
         """
         Parse the `self.magres_outputs_class` section. It extracts the information of the [magres][/magres] block and passes
         it as input for parsing the corresponding properties. It also assigns references to the `MagresParser.model_method_class` and `MagresParser.model_system_class`
@@ -1098,7 +1101,7 @@ class MagresParser(MatchingParser):
         # cell for checks of the output properties blocks
         if simulation.model_system is None:
             logger.warning(
-                "Could not find the `MagresParser.model_system_class` that the outputs reference to."
+                'Could not find the `MagresParser.model_system_class` that the outputs reference to.'
             )
             return None
         outputs = self.magres_outputs_class(
@@ -1107,46 +1110,96 @@ class MagresParser(MatchingParser):
         )
         if (
             not simulation.model_system[-1].cell
-            or not simulation.model_system[-1].cell[-1].atoms_state
+            or not simulation.model_system[-1].particle_states
         ):
             logger.warning(
-                "Could not find the `cell` sub-section or the `MagresParser.atom_state_class` list under it."
+                'Could not find the `cell` sub-section or the `MagresParser.atom_state_class` list under particle states.'
             )
             return None
         cell = simulation.model_system[-1].cell[-1]
 
         # Check if [magres][/magres] was correctly parsed
-        magres_data = self.magres_file_parser.get("magres")
+        magres_data = self.magres_file_parser.get('magres')
         if not magres_data:
-            logger.warning("Could not find [magres] data block in magres file.")
+            logger.warning('Could not find [magres] data block in magres file.')
             return None
 
-        # Parse `MagresParser.mag_shielding_tensor`
+        # Parse `MagresParser.mag_shielding`
         ms = self.parse_magnetic_shieldings(
-            magres_data=magres_data, cell=cell, logger=logger
+            magres_data=magres_data,
+            cell=cell,
+            atom_state_class=atomsstate,
+            model_system=simulation.model_system[-1],
+            logger=logger,
         )
         if len(ms) > 0:
             outputs.magnetic_shieldings = ms
 
         # Parse `MagresParser.e_field_gradient_class`
         efg = self.parse_electric_field_gradients(
-            magres_data=magres_data, cell=cell, logger=logger
+            magres_data=magres_data,
+            cell=cell,
+            atom_state_class=atomsstate,
+            model_system=simulation.model_system[-1],
+            logger=logger,
         )
-        if (
-            len(efg.efg_total) > 0
-            or len(efg.efg_local) > 0
-            or len(efg.efg_nonlocal) > 0
-        ):
-            efg.model_system_ref = simulation.model_system[-1]
-            efg.model_method_ref = simulation.model_method[-1]
-            outputs.electric_field_gradients.append(efg)
+        if len(efg) > 0:
+            outputs.electric_field_gradients = efg
 
-        # Parse `self.spin_spin_couplings_class`
-        isc = self.parse_spin_spin_couplings(
-            magres_data=magres_data, cell=cell, logger=logger
+        # Parse `self.indirect_spin_spin_couplings_class`
+        isc = self.parse_indirect_spin_spin_couplings(
+            magres_data=magres_data,
+            cell=cell,
+            atom_state_class=atomsstate,
+            model_system=simulation.model_system[-1],
+            logger=logger,
         )
         if len(isc) > 0:
-            outputs.spin_spin_couplings = isc
+            outputs.indirect_spin_spin_couplings = isc
+
+        # Parse `self.indirect_spin_spin_couplings_fc_class`
+        isc_fc = self.parse_indirect_spin_spin_couplings_fc(
+            magres_data=magres_data,
+            cell=cell,
+            atom_state_class=atomsstate,
+            model_system=simulation.model_system[-1],
+            logger=logger,
+        )
+        if len(isc_fc) > 0:
+            outputs.indirect_spin_spin_couplings_fermi_contact = isc_fc
+
+        # Parse `self.indirect_spin_spin_couplings_orbital_d_class`
+        isc_orbital_d = self.parse_indirect_spin_spin_couplings_orbital_d(
+            magres_data=magres_data,
+            cell=cell,
+            atom_state_class=atomsstate,
+            model_system=simulation.model_system[-1],
+            logger=logger,
+        )
+        if len(isc_orbital_d) > 0:
+            outputs.indirect_spin_spin_couplings_orbital_d = isc_orbital_d
+
+        # Parse `self.indirect_spin_spin_couplings_orbital_p_class`
+        isc_orbital_p = self.parse_indirect_spin_spin_couplings_orbital_p(
+            magres_data=magres_data,
+            cell=cell,
+            atom_state_class=atomsstate,
+            model_system=simulation.model_system[-1],
+            logger=logger,
+        )
+        if len(isc_orbital_p) > 0:
+            outputs.indirect_spin_spin_couplings_orbital_p = isc_orbital_p
+
+        # Parse `self.indirect_spin_spin_couplings_spin_class`
+        isc_spin = self.parse_indirect_spin_spin_couplings_spin(
+            magres_data=magres_data,
+            cell=cell,
+            atom_state_class=atomsstate,
+            model_system=simulation.model_system[-1],
+            logger=logger,
+        )
+        if len(isc_spin) > 0:
+            outputs.indirect_spin_spin_couplings_spin_dipolar = isc_spin
 
         # Parse `MagresParser.mag_susceptibility_class`
         mag_sus = self.parse_magnetic_susceptibilities(
