@@ -117,8 +117,8 @@ class MagresFileParser(TextParser):
                         Quantity("lattice", rf"lattice({re_float * 9})"),
                         Quantity("symmetry", r"symmetry *([\w\-\+\,]+)", repeats=True),
                         Quantity(
-                            "atom",
-                            rf"atom *([a-zA-Z]+) *[a-zA-Z\d]* *([\d]+) *({re_float * 3})",
+                            'atom',
+                            rf'atom *([a-zA-Z]+) *(\S+) *([\d]+) *({re_float * 3})',
                             repeats=True,
                         ),
                     ]
