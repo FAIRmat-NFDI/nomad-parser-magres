@@ -343,7 +343,7 @@ class MagresParser(MatchingParser):
         self.magres_file_parser.logger = logger
 
     def parse_atomic_cell(
-        self, atoms: TextParser | None, logger: "BoundLogger"
+        self, atoms: TextParser | None, logger: 'BoundLogger'
     ) -> AtomicCell | None:
         """
         Parse the `AtomicCell` section from the magres file.
@@ -357,13 +357,13 @@ class MagresParser(MatchingParser):
         """
         # Check if [atoms][/atoms] was correctly parsed
         if not atoms:
-            logger.warning("Could not find atomic structure in magres file.")
+            logger.warning('Could not find atomic structure in magres file.')
             return None
         atomic_cell = AtomicCell()
 
         # Parse `lattice_vectors` and `periodic_boundary_conditions`
         try:
-            lattice_vectors = np.reshape(np.array(atoms.get("lattice", [])), (3, 3))
+            lattice_vectors = np.reshape(np.array(atoms.get('lattice', [])), (3, 3))
             atomic_cell.lattice_vectors = lattice_vectors * ureg.angstrom
             pbc = (
                 [True, True, True]
@@ -373,29 +373,15 @@ class MagresParser(MatchingParser):
             atomic_cell.periodic_boundary_conditions = pbc
         except Exception:
             logger.warning(
-                "Could not parse `lattice_vectors` and `periodic_boundary_conditions`."
+                'Could not parse `lattice_vectors` and `periodic_boundary_conditions`.'
             )
             return None
 
-        # Parse `positions` and `MagresParser.atom_state_class` list
-        atoms_list = atoms.get("atom", [])
-        if len(atoms_list) == 0:
-            logger.warning(
-                "Could not find atom `positions` and their chemical symbols in magres file."
-            )
-            return None
-        positions = []
-        atoms_states = []
-        for atom in atoms_list:
-            atoms_states.append(self.atom_state_class(chemical_symbol=atom[0]))
-            positions.append(atom[2:])
-        atomic_cell.positions = positions * ureg.angstrom
-        atomic_cell.atoms_state = atoms_states
         return atomic_cell
 
     def parse_model_system(
-        self, logger: "BoundLogger"
-    ) -> Optional["MagresParser.model_system_class"]:
+        self, logger: 'BoundLogger'
+    ) -> Optional['MagresParser.model_system_class']:
         """
         Parse the `MagresParser.model_system_class` section from the magres file if the [atoms][/atoms] section
         in the magres file was correctly matched.
@@ -407,9 +393,9 @@ class MagresParser(MatchingParser):
             Optional[MagresParser.model_system_class]: The parsed `MagresParser.model_system_class` section.
         """
         # Check if [atoms][/atoms] was correctly parsed
-        atoms = self.magres_file_parser.get("atoms")
+        atoms = self.magres_file_parser.get('atoms')
         if not atoms:
-            logger.warning("Could not find atomic structure in magres file.")
+            logger.warning('Could not find atomic structure in magres file.')
             return None
 
         # Parse `MagresParser.model_system_class` and its `cell`
@@ -417,6 +403,28 @@ class MagresParser(MatchingParser):
         model_system.is_representative = True
         atomic_cell = self.parse_atomic_cell(atoms=atoms, logger=logger)
         model_system.cell.append(atomic_cell)
+
+        # Parse `positions` and `MagresParser.atom_state_class` list
+        atoms_list = atoms.get('atom', [])
+        if len(atoms_list) == 0:
+            logger.warning(
+                'Could not find atom `positions` and their chemical symbols in magres file.'
+            )
+            return None
+        positions = []
+        particle_states = []
+
+        for atom in atoms_list:
+            particle_states.append(
+                self.atom_state_class(chemical_symbol=atom[0], label=atom[1])
+            )
+            positions.append(atom[3:])
+        model_system.positions = positions * ureg.angstrom
+        model_system.particle_states = particle_states
+
+        self.build_particle_lookup(model_system, logger)
+        self.build_particle_pair_lookup(model_system, logger)
+
         return model_system
 
     def parse_xc_functional(
