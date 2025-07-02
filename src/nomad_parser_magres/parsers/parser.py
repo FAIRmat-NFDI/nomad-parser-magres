@@ -194,11 +194,14 @@ class MagresParser(MatchingParser):
         model_method_class: The class representing the model method section.
         atom_state_class: The class representing the atom state section.
         magres_outputs_class: The class representing the outputs section.
-        spin_spin_couplings_class: The class representing the spin-spin coupling section.
-        e_field_gradients_class: The class representing the electric field gradients section.
+        indirect_spin_spin_couplings_class: The class representing the spin-spin coupling section.
+        indirect_spin_spin_couplings_fc_class: The class representing the Fermi contact spin-spin coupling section.
+        indirect_spin_spin_couplings_orbital_d_class: The class representing the orbital diamagnetic spin-spin coupling section.
+        indirect_spin_spin_couplings_orbital_p_class: The class representing the orbital paramagnetic spin-spin coupling section.
+        indirect_spin_spin_couplings_spin_class: The class representing the spin dipolar spin-spin coupling section.
         e_field_gradient_class: The class representing the electric field gradient section.
         mag_susceptibility_class: The class representing the magnetic susceptibility section.
-        mag_shielding_tensor: The class representing the magnetic shielding tensor section.
+        mag_shielding: The class representing the magnetic shielding tensor section.
         workflow_class: The class representing the workflow section.
         workflow_method_class: The class representing the workflow method section.
         workflow_results_class: The class representing the workflow results section.
@@ -260,11 +263,18 @@ class MagresParser(MatchingParser):
     model_method_class = ModelMethod
     atom_state_class = AtomsState
     magres_outputs_class = Outputs
-    spin_spin_couplings_class = SpinSpinCoupling
-    e_field_gradients_class = ElectricFieldGradients
+    indirect_spin_spin_couplings_class = IndirectSpinSpinCoupling
+    indirect_spin_spin_couplings_fc_class = IndirectSpinSpinCouplingFermiContact
+    indirect_spin_spin_couplings_orbital_d_class = (
+        IndirectSpinSpinCouplingOrbitalDiamagnetic
+    )
+    indirect_spin_spin_couplings_orbital_p_class = (
+        IndirectSpinSpinCouplingOrbitalParamagnetic
+    )
+    indirect_spin_spin_couplings_spin_class = IndirectSpinSpinCouplingSpinDipolar
     e_field_gradient_class = ElectricFieldGradient
     mag_susceptibility_class = MagneticSusceptibility
-    mag_shielding_tensor = MagneticShieldingTensor
+    mag_shielding = MagneticShielding
     # Worḱflow section classes:
     workflow_class = NMRMagRes
     workflow_method_class = NMRMagResMethod
