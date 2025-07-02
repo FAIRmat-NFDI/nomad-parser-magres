@@ -329,6 +329,8 @@ class MagresParser(MatchingParser):
             "HSE06": ["HYB_GGA_XC_HSE06"],
             "RSCAN": ["MGGA_X_RSCAN", "MGGA_C_RSCAN"],
         }
+        self.particle_lookup = {}  # To ensure associaton of particle states with correct magres data
+        self.particle_pair_lookup = {}  # To ensure association of particle pairs with correct magres data
 
     def _check_units_magres(self, logger: "BoundLogger") -> None:
         """
