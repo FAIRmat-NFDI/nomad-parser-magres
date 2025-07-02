@@ -52,70 +52,68 @@ class MagresFileParser(TextParser):
 
     def init_quantities(self):
         self._quantities = [
-            Quantity("lattice_units", r"units *lattice *([a-zA-Z]+)"),
-            Quantity("atom_units", r"units *atom *([a-zA-Z]+)"),
-            Quantity("ms_units", r"units *ms *([a-zA-Z]+)"),
-            Quantity("efg_units", r"units *efg *([a-zA-Z]+)"),
-            Quantity("efg_local_units", r"units *efg_local *([a-zA-Z]+)"),
-            Quantity("efg_nonlocal_units", r"units *efg_nonlocal *([a-zA-Z]+)"),
-            Quantity("isc_units", r"units *isc *([a-zA-Z\^\d\.\-]+)"),
-            Quantity("isc_fc_units", r"units *isc_fc *([a-zA-Z\^\d\.\-]+)"),
-            Quantity("isc_spin_units", r"units *isc_spin *([a-zA-Z\^\d\.\-]+)"),
+            Quantity('lattice_units', r'units *lattice *([a-zA-Z]+)'),
+            Quantity('atom_units', r'units *atom *([a-zA-Z]+)'),
+            Quantity('ms_units', r'units *ms *([a-zA-Z]+)'),
+            Quantity('efg_units', r'units *efg *([a-zA-Z]+)'),
+            Quantity('isc_units', r'units *isc *([a-zA-Z\^\d\.\-]+)'),
+            Quantity('isc_fc_units', r'units *isc_fc *([a-zA-Z\^\d\.\-]+)'),
+            Quantity('isc_spin_units', r'units *isc_spin *([a-zA-Z\^\d\.\-]+)'),
             Quantity(
-                "isc_orbital_p_units", r"units *isc_orbital_p *([a-zA-Z\^\d\.\-]+)"
+                'isc_orbital_p_units', r'units *isc_orbital_p *([a-zA-Z\^\d\.\-]+)'
             ),
             Quantity(
-                "isc_orbital_d_units", r"units *isc_orbital_d *([a-zA-Z\^\d\.\-]+)"
+                'isc_orbital_d_units', r'units *isc_orbital_d *([a-zA-Z\^\d\.\-]+)'
             ),
-            Quantity("sus_units", r"units *sus *([a-zA-Z\^\d\.\-]+)"),
-            Quantity("cutoffenergy_units", r"units *calc\_cutoffenergy *([a-zA-Z]+)"),
+            Quantity('sus_units', r'units *sus *([a-zA-Z\^\d\.\-]+)'),
+            Quantity('cutoffenergy_units', r'units *calc\_cutoffenergy *([a-zA-Z]+)'),
             Quantity(
-                "calculation",
-                r"([\[\<]*calculation[\>\]]*[\s\S]+?)(?:[\[\<]*\/calculation[\>\]]*)",
+                'calculation',
+                r'([\[\<]*calculation[\>\]]*[\s\S]+?)(?:[\[\<]*\/calculation[\>\]]*)',
                 sub_parser=TextParser(
                     quantities=[
-                        Quantity("code", r"calc\_code *([a-zA-Z]+)"),
+                        Quantity('code', r'calc\_code *([a-zA-Z]+)'),
                         Quantity(
-                            "code_version", r"calc\_code\_version *([a-zA-Z\d\.]+)"
+                            'code_version', r'calc\_code\_version *([a-zA-Z\d\.]+)'
                         ),
                         Quantity(
-                            "code_hgversion",
-                            r"calc\_code\_hgversion ([a-zA-Z\d\:\+\s]*)\n",
+                            'code_hgversion',
+                            r'calc\_code\_hgversion ([a-zA-Z\d\:\+\s]*)\n',
                             flatten=False,
                         ),
                         Quantity(
-                            "code_platform", r"calc\_code\_platform *([a-zA-Z\d\_]+)"
+                            'code_platform', r'calc\_code\_platform *([a-zA-Z\d\_]+)'
                         ),
-                        Quantity("name", r"calc\_name *([\w]+)"),
-                        Quantity("comment", r"calc\_comment *([\w]+)"),
-                        Quantity("xcfunctional", r"calc\_xcfunctional *([\w]+)"),
+                        Quantity('name', r'calc\_name *([\w]+)'),
+                        Quantity('comment', r'calc\_comment *([\w]+)'),
+                        Quantity('xcfunctional', r'calc\_xcfunctional *([\w]+)'),
                         Quantity(
-                            "cutoffenergy",
-                            rf"calc\_cutoffenergy({re_float})(?P<__unit>\w+)",
+                            'cutoffenergy',
+                            rf'calc\_cutoffenergy({re_float})(?P<__unit>\w+)',
                         ),
                         Quantity(
-                            "pspot",
-                            r"calc\_pspot *([\w]+) *([\w\.\|\(\)\=\:]+)",
+                            'pspot',
+                            r'calc\_pspot *([\w]+) *([\w\.\|\(\)\=\:]+)',
                             repeats=True,
                         ),
                         Quantity(
-                            "kpoint_mp_grid",
-                            r"calc\_kpoint\_mp\_grid *([\w]+) *([\w]+) *([\w]+)",
+                            'kpoint_mp_grid',
+                            r'calc\_kpoint\_mp\_grid *([\w]+) *([\w]+) *([\w]+)',
                         ),
                         Quantity(
-                            "kpoint_mp_offset",
-                            rf"calc\_kpoint\_mp\_offset({re_float * 3})$",
+                            'kpoint_mp_offset',
+                            rf'calc\_kpoint\_mp\_offset({re_float * 3})$',
                         ),
                     ]
                 ),
             ),
             Quantity(
-                "atoms",
-                r"([\[\<]*atoms[\>\]]*[\s\S]+?)(?:[\[\<]*\/atoms[\>\]]*)",
+                'atoms',
+                r'([\[\<]*atoms[\>\]]*[\s\S]+?)(?:[\[\<]*\/atoms[\>\]]*)',
                 sub_parser=TextParser(
                     quantities=[
-                        Quantity("lattice", rf"lattice({re_float * 9})"),
-                        Quantity("symmetry", r"symmetry *([\w\-\+\,]+)", repeats=True),
+                        Quantity('lattice', rf'lattice({re_float * 9})'),
+                        Quantity('symmetry', r'symmetry *([\w\-\+\,]+)', repeats=True),
                         Quantity(
                             'atom',
                             rf'atom *([a-zA-Z]+) *(\S+) *([\d]+) *({re_float * 3})',
@@ -125,52 +123,42 @@ class MagresFileParser(TextParser):
                 ),
             ),
             Quantity(
-                "magres",
-                r"([\[\<]*magres[\>\]]*[\s\S]+?)(?:[\[\<]*\/magres[\>\]]*)",
+                'magres',
+                r'([\[\<]*magres[\>\]]*[\s\S]+?)(?:[\[\<]*\/magres[\>\]]*)',
                 sub_parser=TextParser(
                     quantities=[
                         Quantity(
-                            "ms", rf"ms *(\w+) *(\d+)({re_float * 9})", repeats=True
+                            'ms', rf'ms *(\w+) *(\d+)({re_float * 9})', repeats=True
                         ),
                         Quantity(
-                            "efg", rf"efg *(\w+) *(\d+)({re_float * 9})", repeats=True
+                            'efg', rf'efg *(\w+) *(\d+)({re_float * 9})', repeats=True
                         ),
                         Quantity(
-                            "efg_local",
-                            rf"efg_local *(\w+) *(\d+)({re_float * 9})",
+                            'isc',
+                            rf'isc *(\w+) *(\d+) *(\w+) *(\d+)({re_float * 9})',
                             repeats=True,
                         ),
                         Quantity(
-                            "efg_nonlocal",
-                            rf"efg_nonlocal *(\w+) *(\d+)({re_float * 9})",
+                            'isc_fc',
+                            rf'isc_fc *(\w+) *(\d+) *(\w+) *(\d+)({re_float * 9})',
                             repeats=True,
                         ),
                         Quantity(
-                            "isc",
-                            rf"isc *(\w+) *(\d+) *(\w+) *(\d+)({re_float * 9})",
+                            'isc_orbital_p',
+                            rf'isc_orbital_p *(\w+) *(\d+) *(\w+) *(\d+)({re_float * 9})',
                             repeats=True,
                         ),
                         Quantity(
-                            "isc_fc",
-                            rf"isc_fc *(\w+) *(\d+) *(\w+) *(\d+)({re_float * 9})",
+                            'isc_orbital_d',
+                            rf'isc_orbital_d *(\w+) *(\d+) *(\w+) *(\d+)({re_float * 9})',
                             repeats=True,
                         ),
                         Quantity(
-                            "isc_orbital_p",
-                            rf"isc_orbital_p *(\w+) *(\d+) *(\w+) *(\d+)({re_float * 9})",
+                            'isc_spin',
+                            rf'isc_spin *(\w+) *(\d+) *(\w+) *(\d+)({re_float * 9})',
                             repeats=True,
                         ),
-                        Quantity(
-                            "isc_orbital_d",
-                            rf"isc_orbital_d *(\w+) *(\d+) *(\w+) *(\d+)({re_float * 9})",
-                            repeats=True,
-                        ),
-                        Quantity(
-                            "isc_spin",
-                            rf"isc_spin *(\w+) *(\d+) *(\w+) *(\d+)({re_float * 9})",
-                            repeats=True,
-                        ),
-                        Quantity("sus", rf"sus *({re_float * 9})", repeats=True),
+                        Quantity('sus', rf'sus *({re_float * 9})', repeats=True),
                     ]
                 ),
             ),
@@ -314,57 +302,55 @@ class MagresParser(MatchingParser):
         super().__init__(*args, **kwargs)
         self.magres_file_parser = MagresFileParser()
         self._xc_functional_map = {
-            "LDA": ["LDA_C_PZ", "LDA_X_PZ"],
-            "PW91": ["GGA_C_PW91", "GGA_X_PW91"],
-            "PBE": ["GGA_C_PBE", "GGA_X_PBE"],
-            "RPBE": ["GGA_X_RPBE"],
-            "WC": ["GGA_C_PBE_GGA_X_WC"],
-            "PBESOL": ["GGA_X_RPBE"],
-            "BLYP": ["GGA_C_LYP", "LDA_X_B88"],
-            "B3LYP": ["HYB_GGA_XC_B3LYP5"],
-            "HF": ["HF_X"],
-            "HF-LDA": ["HF_X_LDA_C_PW"],
-            "PBE0": ["HYB_GGA_XC_PBEH"],
-            "HSE03": ["HYB_GGA_XC_HSE03"],
-            "HSE06": ["HYB_GGA_XC_HSE06"],
-            "RSCAN": ["MGGA_X_RSCAN", "MGGA_C_RSCAN"],
+            'LDA': ['LDA_C_PZ', 'LDA_X_PZ'],
+            'PW91': ['GGA_C_PW91', 'GGA_X_PW91'],
+            'PBE': ['GGA_C_PBE', 'GGA_X_PBE'],
+            'RPBE': ['GGA_X_RPBE'],
+            'WC': ['GGA_C_PBE_GGA_X_WC'],
+            'PBESOL': ['GGA_X_RPBE'],
+            'BLYP': ['GGA_C_LYP', 'LDA_X_B88'],
+            'B3LYP': ['HYB_GGA_XC_B3LYP5'],
+            'HF': ['HF_X'],
+            'HF-LDA': ['HF_X_LDA_C_PW'],
+            'PBE0': ['HYB_GGA_XC_PBEH'],
+            'HSE03': ['HYB_GGA_XC_HSE03'],
+            'HSE06': ['HYB_GGA_XC_HSE06'],
+            'RSCAN': ['MGGA_X_RSCAN', 'MGGA_C_RSCAN'],
         }
         self.particle_lookup = {}  # To ensure associaton of particle states with correct magres data
         self.particle_pair_lookup = {}  # To ensure association of particle pairs with correct magres data
 
-    def _check_units_magres(self, logger: "BoundLogger") -> None:
+    def _check_units_magres(self, logger: 'BoundLogger') -> None:
         """
         Check if the units of the NMR quantities are magres standard. If not, a warning
         is issued and the default units are used.
         """
         allowed_units = {
-            "lattice": "Angstrom",
-            "atom": "Angstrom",
-            "ms": "ppm",
-            "efg": "au",
-            "efg_local": "au",
-            "efg_nonlocal": "au",
-            "isc": "10^19.T^2.J^-1",
-            "isc_fc": "10^19.T^2.J^-1",
-            "isc_orbital_p": "10^19.T^2.J^-1",
-            "isc_orbital_d": "10^19.T^2.J^-1",
-            "isc_spin": "10^19.T^2.J^-1",
-            "sus": "10^-6.cm^3.mol^-1",
+            'lattice': 'Angstrom',
+            'atom': 'Angstrom',
+            'ms': 'ppm',
+            'efg': 'au',
+            'isc': '10^19.T^2.J^-1',
+            'isc_fc': '10^19.T^2.J^-1',
+            'isc_orbital_p': '10^19.T^2.J^-1',
+            'isc_orbital_d': '10^19.T^2.J^-1',
+            'isc_spin': '10^19.T^2.J^-1',
+            'sus': '10^-6.cm^3.mol^-1',
         }
         for key, value in allowed_units.items():
-            data = self.magres_file_parser.get(f"{key}_units", "")
+            data = self.magres_file_parser.get(f'{key}_units', '')
             if data and data != value:
                 logger.warning(
-                    "The units of the NMR quantities are not parsed if they are not magres standard. "
-                    "We will use the default units.",
+                    'The units of the NMR quantities are not parsed if they are not magres standard. '
+                    'We will use the default units.',
                     data={
-                        "quantities": key,
-                        "standard_units": value,
-                        "parsed_units": data,
+                        'quantities': key,
+                        'standard_units': value,
+                        'parsed_units': data,
                     },
                 )
 
-    def init_parser(self, logger: "BoundLogger") -> None:
+    def init_parser(self, logger: 'BoundLogger') -> None:
         """
         Initialize the `MagresFileParser` with the mainfile and logger.
 
@@ -472,25 +458,25 @@ class MagresParser(MatchingParser):
         Returns:
             list[XCFunctional]: The parsed `XCFunctional` sections.
         """
-        xc_functional = calculation_params.get("xcfunctional", "LDA")
+        xc_functional = calculation_params.get('xcfunctional', 'LDA')
         xc_functional_labels = self._xc_functional_map.get(xc_functional, [])
         xc_sections = []
         for xc in xc_functional_labels:
             functional = XCFunctional(libxc_name=xc)
-            if "_X_" in xc:
-                functional.name = "exchange"
-            elif "_C_" in xc:
-                functional.name = "correlation"
-            elif "HYB" in xc:
-                functional.name = "hybrid"
+            if '_X_' in xc:
+                functional.name = 'exchange'
+            elif '_C_' in xc:
+                functional.name = 'correlation'
+            elif 'HYB' in xc:
+                functional.name = 'hybrid'
             else:
-                functional.name = "contribution"
+                functional.name = 'contribution'
             xc_sections.append(functional)
         return xc_sections
 
     def parse_model_method(
         self, calculation_params: TextParser | None
-    ) -> "MagresParser.model_method_class":
+    ) -> 'MagresParser.model_method_class':
         """
         Parse the `MagresParser.model_method_class` section by extracting information about the NMR method: basis set,
         exchange-correlation functional, cutoff energy, and K mesh.
@@ -503,7 +489,7 @@ class MagresParser(MatchingParser):
         Returns:
             Optional[MagresParser.model_method_class]: The parsed `MagresParser.model_method_class` section.
         """
-        model_method = DFT(name="NMR")
+        model_method = DFT(name='NMR')
 
         # Parse `XCFunctinals` information
         xc_functionals = self.parse_xc_functional(calculation_params=calculation_params)
@@ -527,8 +513,8 @@ class MagresParser(MatchingParser):
 
         # Parse `KSpace` as a `NumericalSettings` section
         k_mesh = KMesh(
-            grid=calculation_params.get("kpoint_mp_grid", [1, 1, 1]),
-            offset=calculation_params.get("kpoint_mp_offset", [0, 0, 0]),
+            grid=calculation_params.get('kpoint_mp_grid', [1, 1, 1]),
+            offset=calculation_params.get('kpoint_mp_offset', [0, 0, 0]),
         )
         model_method.numerical_settings.append(KSpace(k_mesh=[k_mesh]))
 
@@ -1213,7 +1199,7 @@ class MagresParser(MatchingParser):
         return outputs
 
     def parse_nmr_magres_file_format(
-        self, nmr_first_principles_archive: "EntryArchive"
+        self, nmr_first_principles_archive: 'EntryArchive'
     ):
         """
         Automatically parses the NMR Magres workflow. Here, `self.archive` is the
@@ -1226,7 +1212,7 @@ class MagresParser(MatchingParser):
         workflow = self.workflow_class(
             method=self.workflow_method_class(), results=self.workflow_results_class()
         )
-        workflow.name = "NMR Magres"
+        workflow.name = 'NMR Magres'
 
         # ! Fix this once CASTEP and QuantumESPRESSO use the new `nomad-simulations` schema under 'data'
         # Method
@@ -1236,17 +1222,17 @@ class MagresParser(MatchingParser):
         # Inputs and Outputs
         # ! Fix this to extract `input_structure` from `nmr_first_principles_archive` once
         # ! CASTEP and QuantumESPRESSO use the new `nomad-simulations` schema under 'data'
-        input_structure = extract_section(self.archive, ["data", "model_system"])
-        nmr_magres_calculation = extract_section(self.archive, ["data", "outputs"])
+        input_structure = extract_section(self.archive, ['data', 'model_system'])
+        nmr_magres_calculation = extract_section(self.archive, ['data', 'outputs'])
         if input_structure:
             workflow.m_add_sub_section(
                 self.workflow_class.inputs,
-                Link(name="Input structure", section=input_structure),
+                Link(name='Input structure', section=input_structure),
             )
         if nmr_magres_calculation:
             workflow.m_add_sub_section(
                 self.workflow_class.outputs,
-                Link(name="Output NMR calculation", section=nmr_magres_calculation),
+                Link(name='Output NMR calculation', section=nmr_magres_calculation),
             )
 
         # NMR (first principles) task
@@ -1254,13 +1240,13 @@ class MagresParser(MatchingParser):
         program_name = nmr_first_principles_archive.run[-1].program.name
         if nmr_first_principles_archive.workflow2:
             task = TaskReference(task=nmr_first_principles_archive.workflow2)
-            task.name = f"NMR FirstPrinciples {program_name}"
+            task.name = f'NMR FirstPrinciples {program_name}'
             if input_structure:
-                task.inputs = [Link(name="Input structure", section=input_structure)]
+                task.inputs = [Link(name='Input structure', section=input_structure)]
             if nmr_magres_calculation:
                 task.outputs = [
                     Link(
-                        name="Output NMR calculation",
+                        name='Output NMR calculation',
                         section=nmr_magres_calculation,
                     )
                 ]
@@ -1317,26 +1303,27 @@ class MagresParser(MatchingParser):
         archive.data = simulation
         # ! this will only work after the CASTEP and QE plugin parsers are defined
         # Try to resolve the `entry_id` and `mainfile` of other entries in the upload to connect the magres entry with the CASTEP or QuantumESPRESSO entry
-        filepath_stripped = self.mainfile.split("raw/")[-1]
+        filepath_stripped = self.mainfile.split('raw/')[-1]
         metadata = []
         try:
             from nomad.app.v1.models.models import MetadataRequired
             from nomad.search import search
+
             upload_id = self.archive.metadata.upload_id
             search_ids = search(
-                owner="visible",
+                owner='visible',
                 user_id=self.archive.metadata.main_author.user_id,
-                query={"upload_id": upload_id},
-                required=MetadataRequired(include=["entry_id", "mainfile"]),
+                query={'upload_id': upload_id},
+                required=MetadataRequired(include=['entry_id', 'mainfile']),
             ).data
-            metadata = [[sid["entry_id"], sid["mainfile"]] for sid in search_ids]
+            metadata = [[sid['entry_id'], sid['mainfile']] for sid in search_ids]
         except Exception:
             logger.warning(
-                "Could not resolve the entry_id and mainfile of other entries in the upload."
+                'Could not resolve the entry_id and mainfile of other entries in the upload.'
             )
             return
         for entry_id, mainfile in metadata:
-            #if mainfile == filepath_stripped:  # we skip the current parsed mainfile
+            # if mainfile == filepath_stripped:  # we skip the current parsed mainfile
             #    continue
             # We try to load the archive from its context and connect both the CASTEP and the magres entries
             # ? add more checks on the system information for the connection?
@@ -1346,7 +1333,7 @@ class MagresParser(MatchingParser):
                 )
                 # ! Fix this when CASTEP parser uses the new `data` schema
                 method_label = entry_archive.run[-1].method[-1].label
-                if method_label == "NMR":
+                if method_label == 'NMR':
                     castep_archive = entry_archive
                     # We write the workflow MagresParser.workflow_class directly in the magres entry
                     self.parse_nmr_magres_file_format(
