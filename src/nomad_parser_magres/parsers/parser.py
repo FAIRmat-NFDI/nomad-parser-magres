@@ -237,10 +237,36 @@ class MagresParser(MatchingParser):
             logger: "BoundLogger"
             ) -> list["MagresParser.e_field_gradient_class"]:
             Parses the electric field gradients from the magres file.
-        parse_spin_spin_couplings(magres_data: TextParser,
+        parse_indirect_spin_spin_couplings(magres_data: TextParser,
             cell: "MagresParser.cell_class",
-            logger: "BoundLogger") -> list["MagresParser.spin_spin_couplings_class"]:
-            Parses the spin-spin couplings from the magres file.
+            atom_state_class: "MagresParser.atom_state_class",
+            model_system: "MagresParser.model_system_class",
+            logger: "BoundLogger") -> list["MagresParser.indirect_spin_spin_couplings_class"]:
+            Parses the indirect spin-spin couplings (total contribution) from the magres file.
+        parse_indirect_spin_spin_couplings_fc(magres_data: TextParser,
+            cell: "MagresParser.cell_class",
+            atom_state_class: "MagresParser.atom_state_class",
+            model_system: "MagresParser.model_system_class",
+            logger: "BoundLogger") -> list["MagresParser.indirect_spin_spin_couplings_fc_class"]:
+            Parses the Fermi contact contribution to the indirect spin-spin couplings from the magres file.
+        parse_indirect_spin_spin_couplings_orbital_d(magres_data: TextParser,
+            cell: "MagresParser.cell_class",
+            atom_state_class: "MagresParser.atom_state_class",
+            model_system: "MagresParser.model_system_class",
+            logger: "BoundLogger") -> list["MagresParser.indirect_spin_spin_couplings_orbital_d_class"]:
+            Parses the orbital diamagnetic contribution to the indirect spin-spin couplings from the magres file.
+        parse_indirect_spin_spin_couplings_orbital_p(magres_data: TextParser,
+            cell: "MagresParser.cell_class",
+            atom_state_class: "MagresParser.atom_state_class",
+            model_system: "MagresParser.model_system_class",
+            logger: "BoundLogger") -> list["MagresParser.indirect_spin_spin_couplings_orbital_p_class"]:
+            Parses the orbital paramagnetic contribution to the indirect spin-spin couplings from the magres file.
+        parse_indirect_spin_spin_couplings_spin(magres_data: TextParser,
+            cell: "MagresParser.cell_class",
+            atom_state_class: "MagresParser.atom_state_class",
+            model_system: "MagresParser.model_system_class",
+            logger: "BoundLogger") -> list["MagresParser.indirect_spin_spin_couplings_spin_class"]:
+            Parses the spin dipolar contribution to the indirect spin-spin couplings from the magres file.
         parse_magnetic_susceptibilities(magres_data: TextParser,
             logger: "BoundLogger") -> list["MagresParser.mag_susceptibility_class"]:
             Parses the magnetic susceptibilities from the magres file.
@@ -744,12 +770,14 @@ class MagresParser(MatchingParser):
 
         return electric_field_gradients
 
-    def parse_spin_spin_couplings(
+    def parse_indirect_spin_spin_couplings(
         self,
         magres_data: TextParser,
-        cell: "MagresParser.cell_class",
-        logger: "BoundLogger",
-    ) -> list["MagresParser.spin_spin_couplings_class"]:
+        cell: 'MagresParser.cell_class',
+        atom_state_class: 'MagresParser.atom_state_class',
+        model_system: 'MagresParser.model_system_class',
+        logger: 'BoundLogger',
+    ) -> list['MagresParser.indirect_spin_spin_couplings_class']:
         """
         Parse the spin-spin couplings from the magres file and assign `entity_ref_1` and `entity_ref_2`
         to the specific `MagresParser.atom_state_class`.
@@ -757,44 +785,269 @@ class MagresParser(MatchingParser):
         Args:
             magres_data (TextParser): The parsed [magres][/magres] block.
             cell ('MagresParser.cell_class'): The parsed `MagresParser.cell_class` section.
+            atom_state_class ('MagresParser.atom_state_class'): The class representing the atom state section.
+            model_system ('MagresParser.model_system_class'): The class representing the model system section.
             logger (BoundLogger): The logger to log messages.
 
         Returns:
-            list[self.spin_spin_couplings_class]: The list of parsed `self.spin_spin_couplings_class` sections.
+            list[self.indirect_spin_spin_couplings_class]: The list of parsed `self.indirect_spin_spin_couplings_class` sections.
         """
-        n_atoms = len(cell.atoms_state)
-        isc_contributions = {
-            "isc_fc": "fermi_contact",
-            "isc_orbital_p": "orbital_paramagnetic",
-            "isc_orbital_d": "orbital_diamagnetic",
-            "isc_spin": "spin_dipolar",
-            "isc": "total",
-        }
-        spin_spin_couplings = []
-        for tag, contribution in isc_contributions.items():
-            data = magres_data.get(tag, [])
 
-            # Initial check on the size of the matched text
-            if np.size(data) != n_atoms**2 * (
-                9 + 4
-            ):  # 4 extra columns with atom labels
-                logger.warning(
-                    "The shape of the matched text from the magres file for the `isc` does not coincide with the number of atoms."
-                )
-                return []
+        # Ensure lookup is built
+        if not hasattr(self, 'particle_pair_lookup') or not self.particle_pair_lookup:
+            self.build_particle_pair_lookup(model_system, logger)
 
-            # Parse spin-spin couplings for each contribution and their refs to the specific `MagresParser.atom_state_class`
-            for i, coupled_atom_data in enumerate(data):
-                for j, atom_data in enumerate(coupled_atom_data):
-                    values = np.transpose(np.reshape(atom_data[4:], (3, 3)))
-                    sec_isc = self.spin_spin_couplings_class(
-                        type=contribution,
-                        entity_ref_1=cell.atoms_state[i],
-                        entity_ref_2=cell.atoms_state[j],
-                    )
-                    sec_isc.reduced_value = values * 1e19 * ureg("K^2/J")
-                    spin_spin_couplings.append(sec_isc)
-        return spin_spin_couplings
+        n_atoms = len(model_system.particle_states)
+        data = magres_data.get('isc', [])
+
+        # Initial check on the data block and size of the matched text
+        if not data or np.size(data) == 0:
+            logger.warning('The input magres file does not contain any `isc` data.')
+            return []
+        elif np.size(data) != n_atoms**2 * (9 + 4):  # 4 extra columns with atom labels
+            logger.warning(
+                'The shape of the matched text from the magres file for the `isc` does not coincide with the number of atoms.'
+            )
+            return []
+
+        # Prepare output list of length n_atoms**2
+        indirect_spin_spin_couplings = [None] * (n_atoms * n_atoms)
+
+        for atom_data in data:
+            pair, values = self.extract_particle_pair_and_tensor(atom_data, logger)
+            ps1, ps2, i, j = pair
+            sec_isc = self.indirect_spin_spin_couplings_class(
+                entity_ref_1=ps1,
+                entity_ref_2=ps2,
+            )
+            sec_isc.value = np.transpose(values) * 1e19 * ureg('T^2/J')
+            indirect_spin_spin_couplings[i * n_atoms + j] = sec_isc
+
+        return indirect_spin_spin_couplings
+
+    def parse_indirect_spin_spin_couplings_fc(
+        self,
+        magres_data: TextParser,
+        cell: 'MagresParser.cell_class',
+        atom_state_class: 'MagresParser.atom_state_class',
+        model_system: 'MagresParser.model_system_class',
+        logger: 'BoundLogger',
+    ) -> list['MagresParser.indirect_spin_spin_couplings_fc_class']:
+        """
+        Parse the spin-spin couplings from the magres file and assign `entity_ref_1` and `entity_ref_2`
+        to the specific `MagresParser.atom_state_class`.
+
+        Args:
+            magres_data (TextParser): The parsed [magres][/magres] block.
+            cell ('MagresParser.cell_class'): The parsed `MagresParser.cell_class` section.
+            atom_state_class ('MagresParser.atom_state_class'): The class representing the atom state section.
+            model_system ('MagresParser.model_system_class'): The class representing the model system section.
+            logger (BoundLogger): The logger to log messages.
+
+        Returns:
+            list[self.indirect_spin_spin_couplings_fc_class]: The list of parsed `self.indirect_spin_spin_couplings_fc_class` sections.
+        """
+        # Ensure lookup is built
+        if not hasattr(self, 'particle_pair_lookup') or not self.particle_pair_lookup:
+            self.build_particle_pair_lookup(model_system, logger)
+
+        n_atoms = len(model_system.particle_states)
+        data = magres_data.get('isc_fc', [])
+
+        # Initial check on the data block and size of the matched text
+        if not data or np.size(data) == 0:
+            logger.warning('The input magres file does not contain any `isc_fc` data.')
+            return []
+        elif np.size(data) != n_atoms**2 * (9 + 4):  # 4 extra columns with atom labels
+            logger.warning(
+                'The shape of the matched text from the magres file for the `isc_fc` does not coincide with the number of atoms.'
+            )
+            return []
+
+        # Prepare output list of length n_atoms**2
+        indirect_spin_spin_couplings_fermi_contact = [None] * (n_atoms * n_atoms)
+
+        for atom_data in data:
+            pair, values = self.extract_particle_pair_and_tensor(atom_data, logger)
+            ps1, ps2, i, j = pair
+            sec_isc_fc = self.indirect_spin_spin_couplings_fc_class(
+                entity_ref_1=ps1,
+                entity_ref_2=ps2,
+            )
+            sec_isc_fc.value = np.transpose(values) * 1e19 * ureg('T^2/J')
+            indirect_spin_spin_couplings_fermi_contact[i * n_atoms + j] = sec_isc_fc
+
+        return indirect_spin_spin_couplings_fermi_contact
+
+    def parse_indirect_spin_spin_couplings_orbital_d(
+        self,
+        magres_data: TextParser,
+        cell: 'MagresParser.cell_class',
+        atom_state_class: 'MagresParser.atom_state_class',
+        model_system: 'MagresParser.model_system_class',
+        logger: 'BoundLogger',
+    ) -> list['MagresParser.indirect_spin_spin_couplings_orbital_d_class']:
+        """
+        Parse the spin-spin couplings from the magres file and assign `entity_ref_1` and `entity_ref_2`
+        to the specific `MagresParser.atom_state_class`.
+
+        Args:
+            magres_data (TextParser): The parsed [magres][/magres] block.
+            cell ('MagresParser.cell_class'): The parsed `MagresParser.cell_class` section.
+            atom_state_class ('MagresParser.atom_state_class'): The class representing the atom state section.
+            model_system ('MagresParser.model_system_class'): The class representing the model system section.
+            logger (BoundLogger): The logger to log messages.
+
+        Returns:
+            list[self.indirect_spin_spin_couplings_orbital_d_class]: The list of parsed `self.indirect_spin_spin_couplings_orbital_d_class` sections.
+        """
+        # Ensure lookup is built
+        if not hasattr(self, 'particle_pair_lookup') or not self.particle_pair_lookup:
+            self.build_particle_pair_lookup(model_system, logger)
+
+        n_atoms = len(model_system.particle_states)
+        data = magres_data.get('isc_orbital_d', [])
+
+        # Initial check on the data block and size of the matched text
+        if not data or np.size(data) == 0:
+            logger.warning(
+                'The input magres file does not contain any `isc_orbital_d` data.'
+            )
+            return []
+        elif np.size(data) != n_atoms**2 * (9 + 4):  # 4 extra columns with atom labels
+            logger.warning(
+                'The shape of the matched text from the magres file for the `isc_orbital_d` does not coincide with the number of atoms.'
+            )
+            return []
+
+        # Prepare output list of length n_atoms**2
+        indirect_spin_spin_couplings_orbital_d = [None] * (n_atoms * n_atoms)
+
+        for atom_data in data:
+            pair, values = self.extract_particle_pair_and_tensor(atom_data, logger)
+            ps1, ps2, i, j = pair
+            sec_isc_orbital_d = self.indirect_spin_spin_couplings_orbital_d_class(
+                entity_ref_1=ps1,
+                entity_ref_2=ps2,
+            )
+            sec_isc_orbital_d.value = np.transpose(values) * 1e19 * ureg('T^2/J')
+            indirect_spin_spin_couplings_orbital_d[i * n_atoms + j] = sec_isc_orbital_d
+
+        return indirect_spin_spin_couplings_orbital_d
+
+    def parse_indirect_spin_spin_couplings_orbital_p(
+        self,
+        magres_data: TextParser,
+        cell: 'MagresParser.cell_class',
+        atom_state_class: 'MagresParser.atom_state_class',
+        model_system: 'MagresParser.model_system_class',
+        logger: 'BoundLogger',
+    ) -> list['MagresParser.indirect_spin_spin_couplings_orbital_p_class']:
+        """
+        Parse the spin-spin couplings from the magres file and assign `entity_ref_1` and `entity_ref_2`
+        to the specific `MagresParser.atom_state_class`.
+
+        Args:
+            magres_data (TextParser): The parsed [magres][/magres] block.
+            cell ('MagresParser.cell_class'): The parsed `MagresParser.cell_class` section.
+            atom_state_class ('MagresParser.atom_state_class'): The class representing the atom state section.
+            model_system ('MagresParser.model_system_class'): The class representing the model system section.
+            logger (BoundLogger): The logger to log messages.
+
+        Returns:
+            list[self.indirect_spin_spin_couplings_orbital_p_class]: The list of parsed `self.indirect_spin_spin_couplings_orbital_p_class` sections.
+        """
+        # Ensure lookup is built
+        if not hasattr(self, 'particle_pair_lookup') or not self.particle_pair_lookup:
+            self.build_particle_pair_lookup(model_system, logger)
+
+        n_atoms = len(model_system.particle_states)
+        data = magres_data.get('isc_orbital_p', [])
+
+        # Initial check on the data block and size of the matched text
+        if not data or np.size(data) == 0:
+            logger.warning(
+                'The input magres file does not contain any `isc_orbital_p` data.'
+            )
+            return []
+        elif np.size(data) != n_atoms**2 * (9 + 4):  # 4 extra columns with atom labels
+            logger.warning(
+                'The shape of the matched text from the magres file for the `isc_orbital_p` does not coincide with the number of atoms.'
+            )
+            return []
+
+        # Prepare output list of length n_atoms**2
+        indirect_spin_spin_couplings_orbital_p = [None] * (n_atoms * n_atoms)
+
+        for atom_data in data:
+            pair, values = self.extract_particle_pair_and_tensor(atom_data, logger)
+            ps1, ps2, i, j = pair
+            sec_isc_orbital_p = self.indirect_spin_spin_couplings_orbital_p_class(
+                entity_ref_1=ps1,
+                entity_ref_2=ps2,
+            )
+            sec_isc_orbital_p.value = np.transpose(values) * 1e19 * ureg('T^2/J')
+            indirect_spin_spin_couplings_orbital_p[i * n_atoms + j] = sec_isc_orbital_p
+
+        return indirect_spin_spin_couplings_orbital_p
+
+    def parse_indirect_spin_spin_couplings_spin(
+        self,
+        magres_data: TextParser,
+        cell: 'MagresParser.cell_class',
+        atom_state_class: 'MagresParser.atom_state_class',
+        model_system: 'MagresParser.model_system_class',
+        logger: 'BoundLogger',
+    ) -> list['MagresParser.indirect_spin_spin_couplings_spin_class']:
+        """
+        Parse the spin-spin couplings from the magres file and assign `entity_ref_1` and `entity_ref_2`
+        to the specific `MagresParser.atom_state_class`.
+
+        Args:
+            magres_data (TextParser): The parsed [magres][/magres] block.
+            cell ('MagresParser.cell_class'): The parsed `MagresParser.cell_class` section.
+            atom_state_class ('MagresParser.atom_state_class'): The class representing the atom state section.
+            model_system ('MagresParser.model_system_class'): The class representing the model system section.
+            logger (BoundLogger): The logger to log messages.
+
+        Returns:
+            list[self.indirect_spin_spin_couplings_spin_class]: The list of parsed `self.indirect_spin_spin_couplings_spin_class` sections.
+        """
+        # Ensure lookup is built
+        if not hasattr(self, 'particle_pair_lookup') or not self.particle_pair_lookup:
+            self.build_particle_pair_lookup(model_system, logger)
+
+        n_atoms = len(model_system.particle_states)
+        data = magres_data.get('isc_spin', [])
+
+        # Initial check on the data block and size of the matched text
+        if not data or np.size(data) == 0:
+            logger.warning(
+                'The input magres file does not contain any `isc_spin` data.'
+            )
+            return []
+        elif np.size(data) != n_atoms**2 * (9 + 4):  # 4 extra columns with atom labels
+            logger.warning(
+                'The shape of the matched text from the magres file for the `isc_spin` does not coincide with the number of atoms.'
+            )
+            return []
+
+        # Prepare output list of length n_atoms**2
+        indirect_spin_spin_couplings_spin_dipolar = [None] * (n_atoms * n_atoms)
+
+        for atom_data in data:
+            pair, values = self.extract_particle_pair_and_tensor(atom_data, logger)
+            ps1, ps2, i, j = pair
+            sec_isc__spin_dipolar = self.indirect_spin_spin_couplings_spin_class(
+                entity_ref_1=ps1,
+                entity_ref_2=ps2,
+            )
+            sec_isc__spin_dipolar.value = np.transpose(values) * 1e19 * ureg('T^2/J')
+            indirect_spin_spin_couplings_spin_dipolar[i * n_atoms + j] = (
+                sec_isc__spin_dipolar
+            )
+
+        return indirect_spin_spin_couplings_spin_dipolar
 
     def parse_magnetic_susceptibilities(
         self, magres_data: TextParser, logger: "BoundLogger"
