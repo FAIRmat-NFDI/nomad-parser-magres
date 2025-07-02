@@ -7,6 +7,8 @@ if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
     from structlog.stdlib import BoundLogger
 
+from collections import defaultdict
+
 from nomad.config import config
 from nomad.datamodel import EntryArchive
 from nomad.datamodel.metainfo.workflow import Link, TaskReference
@@ -14,6 +16,17 @@ from nomad.parsing import MatchingParser
 from nomad.parsing.file_parser import Quantity, TextParser
 from nomad.units import ureg
 from nomad.utils import extract_section
+from nomad_nmr_schema.schema_packages.schema_package import (
+    ElectricFieldGradient,
+    IndirectSpinSpinCoupling,
+    IndirectSpinSpinCouplingFermiContact,
+    IndirectSpinSpinCouplingOrbitalDiamagnetic,
+    IndirectSpinSpinCouplingOrbitalParamagnetic,
+    IndirectSpinSpinCouplingSpinDipolar,
+    MagneticShielding,
+    MagneticSusceptibility,
+    Outputs,
+)
 from nomad_simulations.schema_packages.atoms_state import AtomsState
 from nomad_simulations.schema_packages.general import Program, Simulation
 from nomad_simulations.schema_packages.model_method import (
@@ -24,21 +37,13 @@ from nomad_simulations.schema_packages.model_method import (
 from nomad_simulations.schema_packages.model_system import AtomicCell, Cell, ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import KMesh, KSpace
 
-from nomad_nmr_schema.schema_packages.schema_package import (
-    ElectricFieldGradient,
-    ElectricFieldGradients,
-    MagneticShieldingTensor,
-    MagneticSusceptibility,
-    Outputs,
-    SpinSpinCoupling,
-)
-from nomad_parser_magres.schema_packages.workflow import (
+from .workflow import (
     NMRMagRes,
     NMRMagResMethod,
     NMRMagResResults,
 )
 
-re_float = r" *[-+]?\d+\.\d*(?:[Ee][-+]\d+)? *"
+re_float = r' *[-+]?\d+\.\d*(?:[Ee][-+]\d+)? *'
 
 
 class MagresFileParser(TextParser):
