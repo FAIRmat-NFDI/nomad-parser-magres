@@ -225,8 +225,10 @@ class MagresParser(MatchingParser):
             Parses the model method section by extracting information about the NMR method.
         parse_magnetic_shieldings(magres_data: TextParser,
             cell: "MagresParser.cell_class",
+            atom_state_class: "MagresParser.atom_state_class",
+            model_system: "MagresParser.model_system_class",
             logger: "BoundLogger"
-            ) -> list["MagresParser.mag_shielding_tensor"]:
+            ) -> list["MagresParser.mag_shielding"]:
             Parses the magnetic shieldings from the magres file.
         parse_electric_field_gradients(magres_data: TextParser,
             cell: "MagresParser.cell_class",
@@ -644,38 +646,51 @@ class MagresParser(MatchingParser):
     def parse_magnetic_shieldings(
         self,
         magres_data: TextParser,
-        cell: "MagresParser.cell_class",
-        logger: "BoundLogger",
-    ) -> list["MagresParser.mag_shielding_tensor"]:
+        cell: 'MagresParser.cell_class',
+        atom_state_class: 'MagresParser.atom_state_class',
+        model_system: 'MagresParser.model_system_class',
+        logger: 'BoundLogger',
+    ) -> list['MagresParser.mag_shielding']:
         """
         Parse the magnetic shieldings from the magres file and assign `entity_ref` to the specific `MagresParser.atom_state_class`.
 
         Args:
             magres_data (TextParser): The parsed [magres][/magres] block.
             cell ('MagresParser.cell_class'): The parsed `MagresParser.cell_class` section.
+            atom_state_class ('MagresParser.atom_state_class'): The class representing the atom state section.
+            model_system ('MagresParser.model_system_class'): The class representing the model system section.
             logger (BoundLogger): The logger to log messages.
 
         Returns:
-            list[MagresParser.mag_shielding_tensor]: The list of parsed `MagresParser.mag_shielding_tensor` sections.
+            list[MagresParser.mag_shielding]: The list of parsed `MagresParser.mag_shielding` sections.
         """
-        n_atoms = len(cell.atoms_state)
-        data = magres_data.get("ms", [])
 
-        # Initial check on the size of the matched text
-        if np.size(data) != n_atoms * (9 + 2):  # 2 extra columns with atom labels
+        # Ensure lookup is built
+        if not hasattr(self, 'particle_lookup') or not self.particle_lookup:
+            self.build_particle_lookup(model_system)
+
+        n_atoms = len(model_system.particle_states)
+        data = magres_data.get('ms', [])
+
+        # Initial check on the data block and size of the matched text
+        if not data or np.size(data) == 0:
+            logger.warning('The input magres file does not contain any `ms` data.')
+            return []
+        elif np.size(data) != n_atoms * (9 + 2):  # 2 extra columns with atom labels
             logger.warning(
-                "The shape of the matched text from the magres file for the `ms` does not coincide with the number of atoms."
+                'The shape of the matched text from the magres file for the `ms` does not coincide with the number of atoms.'
             )
             return []
 
         # Parse magnetic shieldings and their refs to the specific `MagresParser.atom_state_class`
         magnetic_shieldings = []
-        for i, atom_data in enumerate(data):
-            # values = np.transpose(np.reshape(atom_data[2:], (3, 3)))
-            values = np.transpose(np.reshape(atom_data[2:], (3, 3)))
-            sec_ms = self.mag_shielding_tensor(entity_ref=cell.atoms_state[i])
-            sec_ms.value = values * 1e-6 * ureg("dimensionless")
+
+        for atom_data in data:
+            ps, values = self.extract_particle_state_and_tensor(atom_data, logger)
+            sec_ms = self.mag_shielding(entity_ref=ps)
+            sec_ms.value = np.transpose(values) * 1e-6 * ureg('dimensionless')
             magnetic_shieldings.append(sec_ms)
+
         return magnetic_shieldings
 
     def parse_electric_field_gradients(
