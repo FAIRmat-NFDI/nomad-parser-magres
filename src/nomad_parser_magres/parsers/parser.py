@@ -502,6 +502,145 @@ class MagresParser(MatchingParser):
 
         return model_method
 
+    def build_particle_lookup(self, model_system, logger: 'BoundLogger') -> None:
+        """
+        Build a lookup table for particle_states using (label, index) as key,
+        where index is the 1-based index among atoms with the same label.
+        """
+
+        label_counts = defaultdict(int)
+        particle_lookup = {}
+
+        particle_states = model_system.particle_states
+
+        # If particle_states is non-empty, create a list of indices
+        # If particle_states is empty, log an error and return an empty lookup
+        if not particle_states or len(particle_states) == 0:
+            logger.error(
+                'No particle states recorded in the model system. Cannot build lookup table.'
+            )
+            self.particle_lookup = {}
+            return
+
+        indices = list(range(len(particle_states)))
+
+        for idx in indices:
+            ps = particle_states[idx]
+            label = getattr(ps, 'label', None)
+            if label is None:
+                logger.error(
+                    f'`AtomsState` at index {idx} is missing a valid `label` attribute.'
+                )
+                continue
+            label_counts[label] += 1
+            index = label_counts[label]
+            particle_lookup[(label, index)] = ps
+
+        self.particle_lookup = particle_lookup
+
+    def build_particle_pair_lookup(self, model_system, logger: 'BoundLogger') -> None:
+        """
+        Build a lookup table for all pairs of particle_states using ((label1, idx1),
+        (label2, idx2)) as key.
+        """
+
+        label_counts = defaultdict(int)
+        label_index_to_ps = {}
+        label_index_to_idx = {}
+
+        particle_states = model_system.particle_states
+
+        # If particle_states is non-empty, create a list of indices
+        # If particle_states is empty, log an error and return an empty lookup
+        if not particle_states or len(particle_states) == 0:
+            logger.error(
+                'No particle states recorded in the model system. Cannot build lookup table.'
+            )
+            self.particle_pair_lookup = {}
+            return
+
+        indices = list(range(len(particle_states)))
+
+        # Build single lookup for label/index to AtomsState and index
+        for idx in indices:
+            ps = particle_states[idx]
+            label = getattr(ps, 'label', None)
+            if label is None:
+                logger.error(
+                    f'`AtomsState` at index {idx} is missing a valid `label` attribute.'
+                )
+                continue
+            label_counts[label] += 1
+            index = label_counts[label]
+            label_index_to_ps[(label, index)] = ps
+            label_index_to_idx[(label, index)] = idx
+
+        # Build pair lookup
+        pair_lookup = {}
+        for (label1, idx1), ps1 in label_index_to_ps.items():
+            i = label_index_to_idx[(label1, idx1)]
+            for (label2, idx2), ps2 in label_index_to_ps.items():
+                j = label_index_to_idx[(label2, idx2)]
+                pair_lookup[((label1, idx1), (label2, idx2))] = (ps1, ps2, i, j)
+
+        self.particle_pair_lookup = pair_lookup
+
+    def extract_particle_state_and_tensor(self, atom_data, logger):
+        """
+        Helper function to extract the particle state and tensor values from a magres data line.
+        This function is used by parse_magnetic_shieldings and parse_electric_field_gradients
+
+        Args:
+            atom_data (list): The data line for a single atom, typically containing
+                [label, index, ...tensor values...].
+            logger (BoundLogger): The logger to log messages.
+
+        Returns:
+            tuple: (ps, values)
+                ps: The AtomsState object from self.particle_lookup corresponding to (label, index),
+                    or None if not found.
+                values: The 3x3 numpy array of tensor values, or None if ps is None.
+        """
+        label = atom_data[0]
+        index = int(atom_data[1])
+        ps = self.particle_lookup.get((label, index))
+        if ps is None:
+            logger.warning(f'Could not find atom for label {label} index {index}')
+            return None, None
+        values = np.reshape(atom_data[2:], (3, 3))
+        return ps, values
+
+    def extract_particle_pair_and_tensor(self, atom_data, logger):
+        """
+        Helper function to extract the particle pair and tensor values from a magres data line
+        for spin-spin coupling contributions. This function is used by all indirect spin-spin
+        coupling parsing functions.
+
+        Args:
+            atom_data (list): The data line for a pair of atoms, typically containing
+                [label1, idx1, label2, idx2, ...tensor values...].
+            logger (BoundLogger): The logger to log messages.
+
+        Returns:
+            tuple: (pair, values)
+                pair: The tuple (ps1, ps2, i, j) from self.particle_pair_lookup corresponding to
+                    ((label1, idx1), (label2, idx2)), or None if not found.
+                values: The 3x3 numpy array of tensor values, or None if pair is None.
+        """
+        label1 = atom_data[0]
+        idx1 = int(atom_data[1])
+        label2 = atom_data[2]
+        idx2 = int(atom_data[3])
+        values = np.reshape(atom_data[4:], (3, 3))
+
+        pair = self.particle_pair_lookup.get(((label1, idx1), (label2, idx2)))
+        if pair is None:
+            logger.warning(
+                f'Could not find AtomsState pair for ({label1}, {idx1})-({label2}, {idx2})'
+            )
+            return None, None
+        return pair, values
+
     def parse_magnetic_shieldings(
         self,
         magres_data: TextParser,
