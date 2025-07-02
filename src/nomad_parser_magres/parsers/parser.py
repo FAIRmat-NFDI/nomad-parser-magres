@@ -1050,8 +1050,8 @@ class MagresParser(MatchingParser):
         return indirect_spin_spin_couplings_spin_dipolar
 
     def parse_magnetic_susceptibilities(
-        self, magres_data: TextParser, logger: "BoundLogger"
-    ) -> list["MagresParser.mag_susceptibility_class"]:
+        self, magres_data: TextParser, logger: 'BoundLogger'
+    ) -> list['MagresParser.mag_susceptibility_class']:
         """
         Parse the magnetic susceptibilities from the magres file.
 
@@ -1062,15 +1062,21 @@ class MagresParser(MatchingParser):
         Returns:
             list[MagresParser.mag_susceptibility_class]: The list of parsed `MagresParser.mag_susceptibility_class` sections.
         """
-        data = magres_data.get("sus", [])
-        if np.size(data) != 9:
+
+        data = magres_data.get('sus', [])
+
+        # Initial check on the data block and size of the matched text
+        if not data or np.size(data) == 0:
+            logger.warning('The input magres file does not contain any `sus` data.')
+            return []
+        elif np.size(data) != 9:
             logger.warning(
-                "The shape of the matched text from the magres file for the `sus` does not coincide with 9 (3x3 tensor)."
+                'The shape of the matched text from the magres file for the `sus` does not coincide with 9 (3x3 tensor).'
             )
             return []
         values = np.transpose(np.reshape(data, (3, 3)))
-        sec_sus = self.mag_susceptibility_class(scale_dimension="macroscopic")
-        sec_sus.value = values * 1e-6 * ureg("dimensionless")
+        sec_sus = self.mag_susceptibility_class(scale_dimension='macroscopic')
+        sec_sus.value = values * ureg('m^3/mol')  # *1e-6 cm^3/mol
         return [sec_sus]
 
     def parse_outputs(
