@@ -1269,8 +1269,8 @@ class MagresParser(MatchingParser):
     def parse(
         self,
         filepath: str,
-        archive: "EntryArchive",
-        logger: "BoundLogger",
+        archive: 'EntryArchive',
+        logger: 'BoundLogger',
         child_archives: dict[str, EntryArchive] = None,
     ) -> None:
         self.mainfile = filepath
@@ -1283,15 +1283,16 @@ class MagresParser(MatchingParser):
 
         # Adding self.simulation_class to data
         simulation = self.simulation_class()
-        calculation_params = self.magres_file_parser.get("calculation", {})
-        if calculation_params.get("code", "") != "CASTEP":
+        atom_state_class = self.atom_state_class
+        calculation_params = self.magres_file_parser.get('calculation', {})
+        if calculation_params.get('code', '') != 'CASTEP':
             logger.error(
-                "Only CASTEP-based NMR simulations are supported by the magres parser."
+                'Only CASTEP-based NMR simulations are supported by the magres parser.'
             )
             return
         simulation.program = self.program_class(
-            name=calculation_params.get("code", ""),
-            version=calculation_params.get("code_version", ""),
+            name=calculation_params.get('code', ''),
+            version=calculation_params.get('code_version', ''),
         )
         archive.data = simulation
 
@@ -1305,7 +1306,9 @@ class MagresParser(MatchingParser):
         simulation.model_method.append(model_method)
 
         # `self.magres_outputs` parsing
-        outputs = self.parse_outputs(simulation=simulation, logger=logger)
+        outputs = self.parse_outputs(
+            simulation=simulation, atomsstate=atom_state_class, logger=logger
+        )
         if outputs is not None:
             simulation.outputs.append(outputs)
 
