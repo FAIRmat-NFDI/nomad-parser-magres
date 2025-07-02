@@ -232,8 +232,10 @@ class MagresParser(MatchingParser):
             Parses the magnetic shieldings from the magres file.
         parse_electric_field_gradients(magres_data: TextParser,
             cell: "MagresParser.cell_class",
+            atom_state_class: "MagresParser.atom_state_class",
+            model_system: "MagresParser.model_system_class",
             logger: "BoundLogger"
-            ) -> "MagresParser.e_field_gradients_class":
+            ) -> list["MagresParser.e_field_gradient_class"]:
             Parses the electric field gradients from the magres file.
         parse_spin_spin_couplings(magres_data: TextParser,
             cell: "MagresParser.cell_class",
@@ -696,54 +698,50 @@ class MagresParser(MatchingParser):
     def parse_electric_field_gradients(
         self,
         magres_data: TextParser,
-        cell: "MagresParser.cell_class",
-        logger: "BoundLogger",
-    ) -> "MagresParser.e_field_gradients_class":
+        cell: 'MagresParser.cell_class',
+        atom_state_class: 'MagresParser.atom_state_class',
+        model_system: 'MagresParser.model_system_class',
+        logger: 'BoundLogger',
+    ) -> 'MagresParser.e_field_gradient_class':
         """
         Parse the electric field gradients from the magres file and assign `entity_ref` to the specific `MagresParser.atom_state_class`.
 
         Args:
             magres_data (TextParser): The parsed [magres][/magres] block.
             cell ('MagresParser.cell_class'): The parsed `MagresParser.cell_class` section.
+            atom_state_class ('MagresParser.atom_state_class'): The class representing the atom state section.
+            model_system ('MagresParser.model_system_class'): The class representing the model system section.
             logger (BoundLogger): The logger to log messages.
 
         Returns:
-            self.: The parsed `self.e_field_gradients_class` section.
+            self.: The parsed `self.e_field_gradient_class` section.
         """
-        n_atoms = len(cell.atoms_state)
-        efg_contributions = {
-            "efg_local": "local",
-            "efg_nonlocal": "non_local",
-            "efg": "total",
-        }
-        # electric_field_gradients = []
-        electric_field_gradients = self.e_field_gradients_class()
-        for tag, contribution in efg_contributions.items():
-            data = magres_data.get(tag, [])
+        # Ensure lookup is built
+        if not hasattr(self, 'particle_lookup') or not self.particle_lookup:
+            self.build_particle_lookup(model_system)
 
-            # Initial check on the size of the matched text
-            if np.size(data) != n_atoms * (9 + 2):  # 2 extra columns with atom labels
-                logger.warning(
-                    "The shape of the matched text from the magres file for the `efg` does not coincide with the number of atoms."
-                )
-                # return []
-                continue  # Log a warning and continue processing the remaining tags
+        n_atoms = len(model_system.particle_states)
+        data = magres_data.get('efg', [])
 
-            # Parse electronic field gradients for each contribution and their refs to the specific `MagresParser.atom_state_class`
-            for i, atom_data in enumerate(data):
-                # values = np.transpose(np.reshape(atom_data[2:], (3, 3)))
-                values = np.reshape(atom_data[2:], (3, 3))  # no need to transpose
-                sec_efg = self.e_field_gradient_class(
-                    type=contribution, entity_ref=cell.atoms_state[i]
-                )
-                sec_efg.value = np.transpose(values) * 9.717362e21 * ureg("V/m^2")
-                # electric_field_gradients.append(sec_efg)
-                if contribution == "total":
-                    electric_field_gradients.efg_total.append(sec_efg)
-                elif contribution == "local":
-                    electric_field_gradients.efg_local.append(sec_efg)
-                elif contribution == "non_local":
-                    electric_field_gradients.efg_nonlocal.append(sec_efg)
+        # Initial check on the data block and size of the matched text
+        if not data or np.size(data) == 0:
+            logger.warning('The input magres file does not contain any `efg` data.')
+            return []
+        elif np.size(data) != n_atoms * (9 + 2):  # 2 extra columns with atom labels
+            logger.warning(
+                'The shape of the matched text from the magres file for the `efg` does not coincide with the number of atoms.'
+            )
+            return []
+
+        # Parse electric field gradients and their refs to the specific `MagresParser.atom_state_class`
+        electric_field_gradients = []
+
+        for atom_data in data:
+            ps, values = self.extract_particle_state_and_tensor(atom_data, logger)
+            sec_efg = self.e_field_gradient_class(entity_ref=ps)
+            sec_efg.value = np.transpose(values) * 9.717362e21 * ureg('V/m^2')
+            electric_field_gradients.append(sec_efg)
+
         return electric_field_gradients
 
     def parse_spin_spin_couplings(
