@@ -102,7 +102,7 @@ class MagresFileParser(TextParser):
                         ),
                         Quantity(
                             'kpoint_mp_offset',
-                            rf'calc\_kpoint\_mp\_offset({re_float * 3})$',
+                            r'calc_kpoint_mp_offset\s+([-\d.eE]+)\s+([-\d.eE]+)\s+([-\d.eE]+)',
                         ),
                     ]
                 ),
@@ -512,9 +512,11 @@ class MagresParser(MatchingParser):
         # sec_method.electrons_representation.append(sec_basis_set)
 
         # Parse `KSpace` as a `NumericalSettings` section
+        kpoint_mp_offset = calculation_params.get('kpoint_mp_offset', [0, 0, 0])
+        kpoint_mp_offset = [float(x) for x in kpoint_mp_offset]
         k_mesh = KMesh(
             grid=calculation_params.get('kpoint_mp_grid', [1, 1, 1]),
-            offset=calculation_params.get('kpoint_mp_offset', [0, 0, 0]),
+            offset=kpoint_mp_offset,
         )
         model_method.numerical_settings.append(KSpace(k_mesh=[k_mesh]))
 
