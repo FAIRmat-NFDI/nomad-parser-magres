@@ -1065,7 +1065,7 @@ class MagresParser(MatchingParser):
             )
             return []
         values = np.transpose(np.reshape(data, (3, 3)))
-        sec_sus = self.mag_susceptibility_class(scale_dimension='macroscopic')
+        sec_sus = self.mag_susceptibility_class()
         sec_sus.value = values * ureg('m^3/mol')  # *1e-6 cm^3/mol
         return [sec_sus]
 
