@@ -41,10 +41,13 @@ def test_single_point_ethanol(parser):
     assert np.allclose(positions[3], expected_position, atol=1e-6)
     # Particle States
     assert len(model_system.particle_states) == 9
-    labels = ['H', 'H', 'H', 'H', 'H', 'H', 'C', 'C', 'O']
+    labels = ['H1', 'H1', 'H1', 'H2', 'H2', 'H2', 'C1', 'C2', 'O1']
+    chemical_symbols = ['H', 'H', 'H', 'H', 'H', 'H', 'C', 'C', 'O']
     n_atoms = len(labels)
-    for index, symbol in enumerate(labels):
+    for index, symbol in enumerate(chemical_symbols):
         assert model_system.particle_states[index].chemical_symbol == symbol
+    for index, label in enumerate(labels):
+        assert model_system.particle_states[index].label == label
 
     # Cell
     assert len(model_system.cell) == 1
@@ -96,7 +99,7 @@ def test_single_point_ethanol(parser):
     # Magnetic Shielding - Check entity ref, site labels, and tensor value
     for i in range(n_atoms):
         ms = output.magnetic_shieldings[i]
-        assert ms.entity_ref.chemical_symbol == labels[i]
+        assert ms.entity_ref.chemical_symbol == chemical_symbols[i]
         assert ms.entity_ref.label == labels[i]
         # Normalize to set the custom name
         ms.normalize(archive, logger)
@@ -118,7 +121,7 @@ def test_single_point_ethanol(parser):
     # EFG Tensor - Check entity ref, site labels, and tensor value
     for i in range(n_atoms):
         efg = output.electric_field_gradients[i]
-        assert efg.entity_ref.chemical_symbol == labels[i]
+        assert efg.entity_ref.chemical_symbol == chemical_symbols[i]
         assert efg.entity_ref.label == labels[i]
         # Normalize to set the custom name
         efg.normalize(archive, logger)
@@ -154,9 +157,9 @@ def test_single_point_ethanol(parser):
             idx = i * n_atoms + j
             isc = output.indirect_spin_spin_couplings[idx]
             # Check the chemical symbols and labels for both entities
-            assert isc.entity_ref_1.chemical_symbol == labels[i]
+            assert isc.entity_ref_1.chemical_symbol == chemical_symbols[i]
             assert isc.entity_ref_1.label == labels[i]
-            assert isc.entity_ref_2.chemical_symbol == labels[j]
+            assert isc.entity_ref_2.chemical_symbol == chemical_symbols[j]
             assert isc.entity_ref_2.label == labels[j]
             # Normalize to set the custom name
             isc.normalize(archive, logger)
