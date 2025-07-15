@@ -9,13 +9,11 @@ if TYPE_CHECKING:
 
 from collections import defaultdict
 
-from nomad.app.v1.models.models import MetadataRequired
 from nomad.config import config
 from nomad.datamodel import EntryArchive
 from nomad.datamodel.metainfo.workflow import Link, TaskReference
 from nomad.parsing import MatchingParser
 from nomad.parsing.file_parser import Quantity, TextParser
-from nomad.search import search
 from nomad.units import ureg
 from nomad.utils import extract_section
 from nomad_nmr_schema.schema_packages.schema_package import (
@@ -1319,9 +1317,12 @@ class MagresParser(MatchingParser):
         archive.data = simulation
         # ! this will only work after the CASTEP and QE plugin parsers are defined
         # Try to resolve the `entry_id` and `mainfile` of other entries in the upload to connect the magres entry with the CASTEP or QuantumESPRESSO entry
-        # filepath_stripped = self.mainfile.split('raw/')[-1]
+        filepath_stripped = self.mainfile.split('raw/')[-1]
         metadata = []
         try:
+            from nomad.app.v1.models.models import MetadataRequired
+            from nomad.search import search
+
             upload_id = self.archive.metadata.upload_id
             search_ids = search(
                 owner='visible',

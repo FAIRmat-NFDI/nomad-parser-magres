@@ -1,13 +1,12 @@
 from nomad.config.models.plugins import ParserEntryPoint
 from pydantic import Field
 
-from nomad_parser_magres.parsers.parser import MagresParser
-
 
 class MagresParserEntryPoint(ParserEntryPoint):
     parameter: int = Field(0, description='Custom configuration parameter')
 
     def load(self):
+        from nomad_parser_magres.parsers.parser import MagresParser
 
         return MagresParser(**self.dict())
 
