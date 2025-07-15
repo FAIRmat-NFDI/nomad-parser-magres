@@ -431,17 +431,22 @@ class MagresParser(MatchingParser):
             return None
         positions = []
         particle_states = []
+        indices = [] # for local use, to build lookup tables correctly
 
         for atom in atoms_list:
             particle_states.append(
                 self.atom_state_class(chemical_symbol=atom[0], label=atom[1])
             )
+            indices.append(int(atom[2]))
             positions.append(atom[3:])
         model_system.positions = positions * ureg.angstrom
         model_system.particle_states = particle_states
+        logger.warning(
+            f'Parsed indices list {indices}from the magres file. Type: {type(indices)}'
+        )
 
-        self.build_particle_lookup(model_system, logger)
-        self.build_particle_pair_lookup(model_system, logger)
+        self.build_particle_lookup(model_system, indices, logger)
+        self.build_particle_pair_lookup(model_system, indices, logger)
 
         return model_system
 
@@ -522,13 +527,12 @@ class MagresParser(MatchingParser):
 
         return model_method
 
-    def build_particle_lookup(self, model_system, logger: 'BoundLogger') -> None:
+    def build_particle_lookup(self, model_system, indices, logger: 'BoundLogger') -> None:
         """
         Build a lookup table for particle_states using (label, index) as key,
         where index is the 1-based index among atoms with the same label.
         """
 
-        label_counts = defaultdict(int)
         particle_lookup = {}
 
         particle_states = model_system.particle_states
@@ -542,29 +546,35 @@ class MagresParser(MatchingParser):
             self.particle_lookup = {}
             return
 
-        indices = list(range(len(particle_states)))
-
-        for idx in indices:
+        for idx in range(len(indices)):
             ps = particle_states[idx]
+            index = indices[idx]
             label = getattr(ps, 'label', None)
             if label is None:
                 logger.error(
-                    f'`AtomsState` at index {idx} is missing a valid `label` attribute.'
+                    f'`AtomsState` for particle state {ps} is missing a valid `label` attribute.'
                 )
                 continue
-            label_counts[label] += 1
-            index = label_counts[label]
+            if index is None:
+                logger.error(
+                    f'`AtomsState` for particle state {ps} is missing a valid `index` attribute.'
+                )
+                continue
             particle_lookup[(label, index)] = ps
+
+            # Print the lookup table to the logger for debugging
+            logger.debug(f'Length of particle lookup table: {len(particle_lookup)}')
+            for key, ps in particle_lookup.items():
+                logger.info(f'Lookup entry: label={key[0]}, index={key[1]}, AtomsState chemical symbol={ps.chemical_symbol}, label={ps.label}')
 
         self.particle_lookup = particle_lookup
 
-    def build_particle_pair_lookup(self, model_system, logger: 'BoundLogger') -> None:
+    def build_particle_pair_lookup(self, model_system, indices, logger: 'BoundLogger') -> None:
         """
         Build a lookup table for all pairs of particle_states using ((label1, idx1),
         (label2, idx2)) as key.
         """
 
-        label_counts = defaultdict(int)
         label_index_to_ps = {}
         label_index_to_idx = {}
 
@@ -579,29 +589,31 @@ class MagresParser(MatchingParser):
             self.particle_pair_lookup = {}
             return
 
-        indices = list(range(len(particle_states)))
-
         # Build single lookup for label/index to AtomsState and index
-        for idx in indices:
+        for idx in range(len(indices)):
             ps = particle_states[idx]
+            index = indices[idx]
             label = getattr(ps, 'label', None)
             if label is None:
                 logger.error(
-                    f'`AtomsState` at index {idx} is missing a valid `label` attribute.'
+                    f'`AtomsState` for particle state {ps} is missing a valid `label` attribute.'
                 )
                 continue
-            label_counts[label] += 1
-            index = label_counts[label]
+            if idx is None:
+                logger.error(
+                    f'`AtomsState` for particle state {ps} is missing a valid `index` attribute.'
+                )
+                continue
             label_index_to_ps[(label, index)] = ps
             label_index_to_idx[(label, index)] = idx
 
         # Build pair lookup
         pair_lookup = {}
-        for (label1, idx1), ps1 in label_index_to_ps.items():
-            i = label_index_to_idx[(label1, idx1)]
-            for (label2, idx2), ps2 in label_index_to_ps.items():
-                j = label_index_to_idx[(label2, idx2)]
-                pair_lookup[((label1, idx1), (label2, idx2))] = (ps1, ps2, i, j)
+        for (label1, index1), ps1 in label_index_to_ps.items():
+            i = label_index_to_idx[(label1, index1)]
+            for (label2, index2), ps2 in label_index_to_ps.items():
+                j = label_index_to_idx[(label2, index2)]
+                pair_lookup[((label1, index1), (label2, index2))] = (ps1, ps2, i, j)
 
         self.particle_pair_lookup = pair_lookup
 
@@ -685,7 +697,7 @@ class MagresParser(MatchingParser):
 
         # Ensure lookup is built
         if not hasattr(self, 'particle_lookup') or not self.particle_lookup:
-            self.build_particle_lookup(model_system)
+            self.build_particle_lookup(model_system, logger)
 
         n_atoms = len(model_system.particle_states)
         data = magres_data.get('ms', [])
@@ -734,7 +746,7 @@ class MagresParser(MatchingParser):
         """
         # Ensure lookup is built
         if not hasattr(self, 'particle_lookup') or not self.particle_lookup:
-            self.build_particle_lookup(model_system)
+            self.build_particle_lookup(model_system, logger)
 
         n_atoms = len(model_system.particle_states)
         data = magres_data.get('efg', [])
