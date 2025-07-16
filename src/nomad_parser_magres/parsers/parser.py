@@ -441,9 +441,6 @@ class MagresParser(MatchingParser):
             positions.append(atom[3:])
         model_system.positions = positions * ureg.angstrom
         model_system.particle_states = particle_states
-        logger.warning(
-            f'Parsed indices list {indices}from the magres file. Type: {type(indices)}'
-        )
 
         self.build_particle_lookup(model_system, indices, logger)
         self.build_particle_pair_lookup(model_system, indices, logger)
@@ -561,11 +558,6 @@ class MagresParser(MatchingParser):
                 )
                 continue
             particle_lookup[(label, index)] = ps
-
-            # Print the lookup table to the logger for debugging
-            logger.debug(f'Length of particle lookup table: {len(particle_lookup)}')
-            for key, ps in particle_lookup.items():
-                logger.info(f'Lookup entry: label={key[0]}, index={key[1]}, AtomsState chemical symbol={ps.chemical_symbol}, label={ps.label}')
 
         self.particle_lookup = particle_lookup
 
