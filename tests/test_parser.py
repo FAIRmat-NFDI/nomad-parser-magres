@@ -108,15 +108,13 @@ def test_single_point_ethanol(parser):
     # Check tensor value
     assert np.isclose(
         output.magnetic_shieldings[3].value.magnitude,
-        np.transpose(
-            np.array(
+        np.array(
                 [
                     [3.22898154856e-5, 5.84330480731e-7, -1.63639006642e-6],
                     [7.78952021344e-7, 2.26711049351e-5, 1.80797334282e-6],
                     [-8.10936558433e-8, 2.01393309009e-6, 2.59791612443e-5],
                 ]
-            )
-        ),
+            ),
     ).all()
     # EFG Tensor - Check entity ref, site labels, and tensor value
     for i in range(n_atoms):
@@ -130,16 +128,14 @@ def test_single_point_ethanol(parser):
     # Check tensor value
     assert np.isclose(
         output.electric_field_gradients[3].value.magnitude,
-        np.transpose(
-            np.array(
+        np.array(
                 [
                     [1.25522205339, 0.60319384091, -1.83473060621],
                     [0.60319384091, -1.29847323513, -0.40585650492],
                     [-1.83473060621, -0.40585650492, 0.0432511817317],
                 ]
             )
-            * 9.717362e20
-        ),
+            * 9.717362e20,  # Convert to T/m^2
     ).all()
     # Check spin-spin coupling contributions are present and have correct length
     assert (
@@ -168,29 +164,25 @@ def test_single_point_ethanol(parser):
     # Check tensor value
     assert np.isclose(
         output.indirect_spin_spin_couplings[3].value.magnitude,
-        np.transpose(
-            np.array(
+        np.array(
                 [
                     [0.10333898357, 0.00892814613052, 0.00789750719001],
                     [-0.00991323894355, 0.0689546520892, 0.0692766888876],
                     [-0.0147839319182, 0.060922336088, 0.0372243677199],
                 ]
             )
-            * 1e19
-        ),
+            * 1e19,  # Convert to T^2/J
     ).all()
     # Check magnetic susceptibility is present and has correct length
     assert len(output.magnetic_susceptibilities) == 1  # 1 tensor for the system
     # Check tensor value
     assert np.isclose(
         output.magnetic_susceptibilities[0].value.magnitude,
-        np.transpose(
-            np.array(
+        np.array(
                 [
                     [-49.1163, -2.4718, -0.5854],
                     [-2.4603, -57.7785, -1.9644],
                     [-0.5680, -1.9538, -56.5384],
                 ]
-            )
-        ),
+            ),
     ).all()
