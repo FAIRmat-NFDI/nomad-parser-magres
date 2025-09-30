@@ -293,7 +293,7 @@ class MagresParser(MatchingParser):
     e_field_gradient_class = ElectricFieldGradient
     mag_susceptibility_class = MagneticSusceptibility
     mag_shielding = MagneticShielding
-    # Worḱflow section classes:
+    # Workflow section classes:
     workflow_class = NMRMagRes
     workflow_method_class = NMRMagResMethod
     workflow_results_class = NMRMagResResults
@@ -316,6 +316,22 @@ class MagresParser(MatchingParser):
             'HSE03': ['HYB_GGA_XC_HSE03'],
             'HSE06': ['HYB_GGA_XC_HSE06'],
             'RSCAN': ['MGGA_X_RSCAN', 'MGGA_C_RSCAN'],
+        }
+        # Jacob's ladder classification mapping
+        self._xc_functional_type_map = {
+            'LDA': 'LDA',
+            'PBE': 'GGA', 
+            'PW91': 'GGA',
+            'RPBE': 'GGA',
+            'WC': 'GGA',
+            'PBESOL': 'GGA',
+            'BLYP': 'GGA',
+            'B3LYP': 'hyb_GGA',
+            'PBE0': 'hyb_GGA',
+            'HSE03': 'hyb_GGA',
+            'HSE06': 'hyb_GGA',
+            'RSCAN': 'meta_GGA',
+            'HF': 'HF'
         }
         self.particle_lookup = {}  # To ensure associaton of particle states with correct magres data
         self.particle_pair_lookup = {}  # To ensure association of particle pairs with correct magres data
