@@ -1304,7 +1304,6 @@ class MagresParser(MatchingParser):
             name=calculation_params.get('code', ''),
             version=calculation_params.get('code_version', ''),
         )
-        archive.data = simulation
 
         # `MagresParser.model_system_class` parsing
         model_system = self.parse_model_system(logger=logger)
