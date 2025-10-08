@@ -43,7 +43,8 @@ from .workflow import (
     NMRMagResResults,
 )
 
-re_float = r' *[-+]?\d+\.\d*(?:[Ee][-+]\d+)? *'
+# Updated regex to match floating point numbers from various scientific notations
+re_float = r' *[-+]?(?:\d+\.?\d*|\d*\.\d+)(?:[Ee][-+]?\d+)? *'
 
 
 class MagresFileParser(TextParser):
@@ -394,6 +395,7 @@ class MagresParser(MatchingParser):
             logger.warning('Could not find atomic structure in magres file.')
             return None
         atomic_cell = AtomicCell()
+        atomic_cell.type = 'original'
 
         # Parse `lattice_vectors` and `periodic_boundary_conditions`
         try:
