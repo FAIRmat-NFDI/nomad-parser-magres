@@ -7,14 +7,16 @@ classifiers = [
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "License :: OSI Approved :: Apache Software License",
 ]
 name = "nomad-parser-magres"
 description = "NOMAD parser plugin for the magres file format."
 dynamic = ["version"]
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 authors = [
     { name = "FAIRmat", email = "fairmat@physik.hu-berlin.de" },
     { name = "The CCP-NC Authors" },
