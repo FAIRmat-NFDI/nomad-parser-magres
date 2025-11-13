@@ -73,7 +73,8 @@ class MagresFileParser(TextParser):
                 r'([\[\<]*calculation[\>\]]*[\s\S]+?)(?:[\[\<]*\/calculation[\>\]]*)',
                 sub_parser=TextParser(
                     quantities=[
-                        Quantity('code', r'calc\_code *([a-zA-Z]+)'),
+                        # Quantity('code', r'calc\_code *([a-zA-Z]+)'),
+                        Quantity('code', r'calc\_code\s+([^\n]+)'),
                         Quantity(
                             'code_version', r'calc\_code\_version *([a-zA-Z\d\.]+)'
                         ),
@@ -377,6 +378,70 @@ class MagresParser(MatchingParser):
         self.magres_file_parser.mainfile = self.mainfile
         self.magres_file_parser.logger = logger
 
+    def _parse_program_info(
+        self, calculation_params: dict, logger: 'BoundLogger'
+        ) -> tuple[str, str]:
+        """
+        Parse program name and version from calculation parameters.
+
+        Handles different formats:
+        - CASTEP: calc_code='CASTEP', calc_code_version='<version>'
+        - QE-GIPAW: calc_code='QE-GIPAW <version>' or 'QE-GIPAW',
+                calc_code_version='<version>' or 'git'
+
+        Returns:
+            tuple: (program_name, program_version)
+
+        Note:
+            For legacy QE-GIPAW files, if calc_code_version is 'git' or similar vague
+            descriptors, the version is extracted from calc_code field.
+            Future QE-GIPAW files may have properly separated fields, so this
+            method attempts both parsing strategies.
+        """
+        code = calculation_params.get('code', '')
+        code_version = calculation_params.get('code_version', '')
+
+        # Handle CASTEP format (standard)
+        if code == 'CASTEP':
+            return 'CASTEP', code_version
+
+        # Handle QE-GIPAW format
+        # Future QE files might have properly separated fields, but older files
+        # have version embedded in calc_code field
+        if 'QE' in code:
+            program_name = 'Quantum ESPRESSO'
+
+            # Check if version is in the code field (e.g., "QE-GIPAW 6.x")
+            if ' ' in code:
+                code_parts = code.split()
+                # Extract version from code field if available
+                version_candidate = code_parts[-1] if len(code_parts) > 1 else ''
+                # Use this version unless there is a proper version in code_version
+                if code_version and code_version not in ['git', 'unknown', '']:
+                    program_version = code_version
+                elif version_candidate:
+                    program_version = version_candidate
+                else:
+                    program_version = 'unknown'
+                    logger.error(
+                        'Could not determine QE-GIPAW version from calc_code or calc_code_version.'
+                    )
+            else:
+                # calc_code is just "QE-GIPAW" or "QE"
+                if code_version and code_version not in ['git', 'unknown', '']:
+                    program_version = code_version
+                else:
+                    program_version = 'unknown'
+                    logger.error(
+                        'QE-GIPAW version not properly specified in magres file.',
+                        calc_code_version=code_version,
+                    )
+
+            return program_name, program_version
+
+        # Unrecognized format
+        return code, code_version
+
     def parse_atomic_cell(
         self, atoms: TextParser | None, logger: 'BoundLogger'
     ) -> AtomicCell | None:
@@ -501,7 +566,9 @@ class MagresParser(MatchingParser):
         Parse the `MagresParser.model_method_class` section by extracting information about the NMR method: basis set,
         exchange-correlation functional, cutoff energy, and K mesh.
 
-        Note: only CASTEP-like method parameters are currently being supported.
+        Note: Only CASTEP and QE-GIPAW method parameters are currently being supported.
+        QE-GIPAW generated magres files may have incomplete metadata in the calculation block, but the available data 
+        is parsed as-is.
 
         Args:
             calculation_params (Optional[TextParser]): The parsed [calculation][/calculation] block parameters.
@@ -1297,14 +1364,42 @@ class MagresParser(MatchingParser):
         simulation = self.simulation_class()
         atom_state_class = self.atom_state_class
         calculation_params = self.magres_file_parser.get('calculation', {})
-        if calculation_params.get('code', '') != 'CASTEP':
+        code = calculation_params.get('code', '')
+
+        # If code is a list as in QE-GIPAW cases, join it into a string and update the dict
+        if isinstance(code, list):
+            code = ' '.join(str(c) for c in code)
+            calculation_params['code'] = code  # Update the dict with the fixed value
+            logger.warning(
+                'calc_code was parsed as a list, joining into string',
+                result=code,
+            )
+
+        # Validate supported codes
+        # TODO: Add support for other NMR codes as they become available
+        supported_codes = ['CASTEP', 'QE']
+        is_supported = any(supported in code for supported in supported_codes)
+
+        if not is_supported:
             logger.error(
-                'Only CASTEP-based NMR simulations are supported by the magres parser.'
+                'Only CASTEP and QE-GIPAW based NMR simulations are currently supported '
+                'by the magres parser. Found calc_code: "%s"', code
             )
             return
+
+        # Parse program information
+        # Note: Older QE-GIPAW generated magres files may have limited metadata in the
+        # calculation block, have incomplete or vague version information
+        # (e.g., calc_code_version='git'). The parser attempts to extract version
+        # from calc_code field when necessary.
+        # TODO: Improve parsing when more recent QE-GIPAW files with richer metadata
+        # become available.
+        program_name, program_version = self._parse_program_info(
+            calculation_params, logger
+        )
         simulation.program = self.program_class(
-            name=calculation_params.get('code', ''),
-            version=calculation_params.get('code_version', ''),
+            name=program_name,
+            version=program_version,
         )
 
         # `MagresParser.model_system_class` parsing
