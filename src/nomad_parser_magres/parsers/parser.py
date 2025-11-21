@@ -1,4 +1,5 @@
 import os
+import re
 from typing import TYPE_CHECKING, Optional
 
 import numpy as np
@@ -378,6 +379,36 @@ class MagresParser(MatchingParser):
         self.magres_file_parser.mainfile = self.mainfile
         self.magres_file_parser.logger = logger
 
+    def _is_valid_version(self, version_str: str) -> bool:
+        """
+        Determine if calc_code_version contains meaningful version information.
+        Returns False for version control artifacts, vague descriptors, or empty values.
+
+        Args:
+            version_str (str): The version string to validate
+
+        Returns:
+            bool: True if version appears to be meaningful, False otherwise
+        """
+        if not version_str or not version_str.strip():
+            return False
+
+        version_lower = version_str.lower().strip()
+
+        # Check for common vague/invalid patterns
+        invalid_patterns = [
+            r'^(git|svn|cvs|hg|bzr)',  # Version control systems
+            r'^(unknown|n/?a|none|unspecified)$',  # Vague descriptors
+            r'^svn\d+$',  # SVN revision numbers like 'svn11423'
+            r'^git[a-f0-9]*$',  # Git hashes or 'git' prefix
+        ]
+
+        for pattern in invalid_patterns:
+            if re.match(pattern, version_lower):
+                return False
+
+        return True
+
     def _parse_program_info(
         self, calculation_params: dict, logger: 'BoundLogger'
         ) -> tuple[str, str]:
@@ -387,16 +418,16 @@ class MagresParser(MatchingParser):
         Handles different formats:
         - CASTEP: calc_code='CASTEP', calc_code_version='<version>'
         - QE-GIPAW: calc_code='QE-GIPAW <version>' or 'QE-GIPAW',
-                calc_code_version='<version>' or 'git'
+                calc_code_version='<version>' or invalid values
 
         Returns:
             tuple: (program_name, program_version)
 
         Note:
-            For legacy QE-GIPAW files, if calc_code_version is 'git' or similar vague
-            descriptors, the version is extracted from calc_code field.
-            Future QE-GIPAW files may have properly separated fields, so this
-            method attempts both parsing strategies.
+            For QE-GIPAW files, if calc_code_version contains version control artifacts
+            (git, svn), vague descriptors (unknown), or revision numbers (svn11423),
+            the version is extracted from calc_code field instead.
+            This handles legacy files with incomplete metadata gracefully.
         """
         code = calculation_params.get('code', '')
         code_version = calculation_params.get('code_version', '')
@@ -416,19 +447,26 @@ class MagresParser(MatchingParser):
                 code_parts = code.split()
                 # Extract version from code field if available
                 version_candidate = code_parts[-1] if len(code_parts) > 1 else ''
-                # Use this version unless there is a proper version in code_version
-                if code_version and code_version not in ['git', 'unknown', '']:
+                # Use code_version if it's valid, otherwise fall back to version from calc_code
+                if self._is_valid_version(code_version):
                     program_version = code_version
                 elif version_candidate:
                     program_version = version_candidate
+                    logger.warning(
+                        'Using version from calc_code field due to invalid calc_code_version',
+                        calc_code_version=code_version,
+                        extracted_version=version_candidate,
+                    )
                 else:
                     program_version = 'unknown'
                     logger.error(
-                        'Could not determine QE-GIPAW version from calc_code or calc_code_version.'
+                        'Could not determine QE-GIPAW version from calc_code or calc_code_version.',
+                        calc_code=code,
+                        calc_code_version=code_version,
                     )
             else:
                 # calc_code is just "QE-GIPAW" or "QE"
-                if code_version and code_version not in ['git', 'unknown', '']:
+                if self._is_valid_version(code_version):
                     program_version = code_version
                 else:
                     program_version = 'unknown'
