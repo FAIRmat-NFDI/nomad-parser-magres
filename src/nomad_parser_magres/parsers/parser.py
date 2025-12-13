@@ -669,6 +669,7 @@ class MagresParser(MatchingParser):
         for idx in range(len(indices)):
             ps = particle_states[idx]
             index = indices[idx]
+            ps._site_index = index  # store for reference
             label = getattr(ps, 'label', None)
             if label is None:
                 logger.error(
@@ -708,6 +709,7 @@ class MagresParser(MatchingParser):
         for idx in range(len(indices)):
             ps = particle_states[idx]
             index = indices[idx]
+            ps._site_index = index  # store for reference
             label = getattr(ps, 'label', None)
             if label is None:
                 logger.error(
@@ -832,7 +834,7 @@ class MagresParser(MatchingParser):
 
         for atom_data in data:
             ps, values = self.extract_particle_state_and_tensor(atom_data, logger)
-            sec_ms = self.mag_shielding(entity_ref=ps)
+            sec_ms = self.mag_shielding(entity_ref=ps, indices=[ps._site_index])
             sec_ms.value = values * 1e-6 * ureg('dimensionless')
             magnetic_shieldings.append(sec_ms)
 
@@ -881,7 +883,7 @@ class MagresParser(MatchingParser):
 
         for atom_data in data:
             ps, values = self.extract_particle_state_and_tensor(atom_data, logger)
-            sec_efg = self.e_field_gradient_class(entity_ref=ps)
+            sec_efg = self.e_field_gradient_class(entity_ref=ps, indices=[ps._site_index])
             sec_efg.value = values * 9.717362e21 * ureg('V/m^2')
             electric_field_gradients.append(sec_efg)
 
@@ -936,6 +938,7 @@ class MagresParser(MatchingParser):
             sec_isc = self.indirect_spin_spin_couplings_class(
                 entity_ref_1=ps1,
                 entity_ref_2=ps2,
+                indices=[ps1._site_index, ps2._site_index],
             )
             sec_isc.value = values * 1e19 * ureg('T^2/J')
             indirect_spin_spin_couplings[i * n_atoms + j] = sec_isc
@@ -990,6 +993,7 @@ class MagresParser(MatchingParser):
             sec_isc_fc = self.indirect_spin_spin_couplings_fc_class(
                 entity_ref_1=ps1,
                 entity_ref_2=ps2,
+                indices=[ps1._site_index, ps2._site_index],
             )
             sec_isc_fc.value = values * 1e19 * ureg('T^2/J')
             indirect_spin_spin_couplings_fermi_contact[i * n_atoms + j] = sec_isc_fc
@@ -1046,6 +1050,7 @@ class MagresParser(MatchingParser):
             sec_isc_orbital_d = self.indirect_spin_spin_couplings_orbital_d_class(
                 entity_ref_1=ps1,
                 entity_ref_2=ps2,
+                indices=[ps1._site_index, ps2._site_index],
             )
             sec_isc_orbital_d.value = values * 1e19 * ureg('T^2/J')
             indirect_spin_spin_couplings_orbital_d[i * n_atoms + j] = sec_isc_orbital_d
@@ -1102,6 +1107,7 @@ class MagresParser(MatchingParser):
             sec_isc_orbital_p = self.indirect_spin_spin_couplings_orbital_p_class(
                 entity_ref_1=ps1,
                 entity_ref_2=ps2,
+                indices=[ps1._site_index, ps2._site_index],
             )
             sec_isc_orbital_p.value = values * 1e19 * ureg('T^2/J')
             indirect_spin_spin_couplings_orbital_p[i * n_atoms + j] = sec_isc_orbital_p
@@ -1158,6 +1164,7 @@ class MagresParser(MatchingParser):
             sec_isc__spin_dipolar = self.indirect_spin_spin_couplings_spin_class(
                 entity_ref_1=ps1,
                 entity_ref_2=ps2,
+                indices=[ps1._site_index, ps2._site_index],
             )
             sec_isc__spin_dipolar.value = values * 1e19 * ureg('T^2/J')
             indirect_spin_spin_couplings_spin_dipolar[i * n_atoms + j] = (
