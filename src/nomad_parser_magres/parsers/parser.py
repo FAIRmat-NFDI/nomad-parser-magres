@@ -323,7 +323,7 @@ class MagresParser(MatchingParser):
         # Jacob's ladder classification mapping
         self._xc_functional_type_map = {
             'LDA': 'LDA',
-            'PBE': 'GGA', 
+            'PBE': 'GGA',
             'PW91': 'GGA',
             'RPBE': 'GGA',
             'WC': 'GGA',
@@ -605,7 +605,7 @@ class MagresParser(MatchingParser):
         exchange-correlation functional, cutoff energy, and K mesh.
 
         Note: Only CASTEP and QE-GIPAW method parameters are currently being supported.
-        QE-GIPAW generated magres files may have incomplete metadata in the calculation block, but the available data 
+        QE-GIPAW generated magres files may have incomplete metadata in the calculation block, but the available data
         is parsed as-is.
 
         Args:
@@ -1466,7 +1466,6 @@ class MagresParser(MatchingParser):
         archive.data = simulation
         # ! this will only work after the CASTEP and QE plugin parsers are defined
         # Try to resolve the `entry_id` and `mainfile` of other entries in the upload to connect the magres entry with the CASTEP or QuantumESPRESSO entry
-        filepath_stripped = self.mainfile.split('raw/')[-1]
         metadata = []
         try:
             from nomad.app.v1.models.models import MetadataRequired
