@@ -41,7 +41,7 @@ def test_single_point_ethanol(parser):
     assert np.allclose(positions[3], expected_position, atol=1e-6)
     # Particle States
     assert len(model_system.particle_states) == 9
-    labels = ['H1', 'H1', 'H1', 'H2', 'H2', 'H2', 'C1', 'C2', 'O1']
+    labels = ['H1_1', 'H1_2', 'H1_3', 'H2_4', 'H2_5', 'H2_6', 'C1_1', 'C2_2', 'O1_1']
     chemical_symbols = ['H', 'H', 'H', 'H', 'H', 'H', 'C', 'C', 'O']
     n_atoms = len(labels)
     for index, symbol in enumerate(chemical_symbols):
@@ -104,7 +104,7 @@ def test_single_point_ethanol(parser):
         # Normalize to set the custom name
         ms.normalize(archive, logger)
         # The normalized name should be same as label[i]
-        assert ms.name == f"{ms.entity_ref.label}"
+        assert ms.name == ms.entity_ref.label
     # Check tensor value
     assert np.isclose(
         output.magnetic_shieldings[3].value.magnitude,

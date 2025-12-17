@@ -555,8 +555,9 @@ class MagresParser(MatchingParser):
         indices = [] # for local use, to build lookup tables correctly
 
         for atom in atoms_list:
+            label_index = f"{atom[1]}_{atom[2]}"
             particle_states.append(
-                self.atom_state_class(chemical_symbol=atom[0], label=atom[1])
+                self.atom_state_class(chemical_symbol=atom[0], label=label_index)
             )
             indices.append(int(atom[2]))
             positions.append(atom[3:])
@@ -670,7 +671,7 @@ class MagresParser(MatchingParser):
             ps = particle_states[idx]
             index = indices[idx]
             ps._site_index = index  # store for reference
-            label = getattr(ps, 'label', None)
+            label = getattr(ps, 'label', None)  # label is now label_index (e.g., H1_1)
             if label is None:
                 logger.error(
                     f'`AtomsState` for particle state {ps} is missing a valid `label` attribute.'
@@ -681,7 +682,8 @@ class MagresParser(MatchingParser):
                     f'`AtomsState` for particle state {ps} is missing a valid `index` attribute.'
                 )
                 continue
-            particle_lookup[(label, index)] = ps
+            # Use label_index as the only key (label is already unique)
+            particle_lookup[label] = ps
 
         self.particle_lookup = particle_lookup
 
@@ -710,7 +712,7 @@ class MagresParser(MatchingParser):
             ps = particle_states[idx]
             index = indices[idx]
             ps._site_index = index  # store for reference
-            label = getattr(ps, 'label', None)
+            label = getattr(ps, 'label', None)  # label is now label_index (e.g., H1_1)
             if label is None:
                 logger.error(
                     f'`AtomsState` for particle state {ps} is missing a valid `label` attribute.'
@@ -721,16 +723,16 @@ class MagresParser(MatchingParser):
                     f'`AtomsState` for particle state {ps} is missing a valid `index` attribute.'
                 )
                 continue
-            label_index_to_ps[(label, index)] = ps
-            label_index_to_idx[(label, index)] = idx
+            label_index_to_ps[label] = ps
+            label_index_to_idx[label] = idx
 
         # Build pair lookup
         pair_lookup = {}
-        for (label1, index1), ps1 in label_index_to_ps.items():
-            i = label_index_to_idx[(label1, index1)]
-            for (label2, index2), ps2 in label_index_to_ps.items():
-                j = label_index_to_idx[(label2, index2)]
-                pair_lookup[((label1, index1), (label2, index2))] = (ps1, ps2, i, j)
+        for label1, ps1 in label_index_to_ps.items():
+            i = label_index_to_idx[label1]
+            for label2, ps2 in label_index_to_ps.items():
+                j = label_index_to_idx[label2]
+                pair_lookup[(label1, label2)] = (ps1, ps2, i, j)
 
         self.particle_pair_lookup = pair_lookup
 
@@ -750,11 +752,10 @@ class MagresParser(MatchingParser):
                     or None if not found.
                 values: The 3x3 numpy array of tensor values, or None if ps is None.
         """
-        label = atom_data[0]
-        index = int(atom_data[1])
-        ps = self.particle_lookup.get((label, index))
+        label = f"{atom_data[0]}_{atom_data[1]}"
+        ps = self.particle_lookup.get(label)
         if ps is None:
-            logger.warning(f'Could not find atom for label {label} index {index}')
+            logger.warning(f'Could not find atom for label_index {label}')
             return None, None
         values = np.reshape(atom_data[2:], (3, 3))
         return ps, values
@@ -776,16 +777,14 @@ class MagresParser(MatchingParser):
                     ((label1, idx1), (label2, idx2)), or None if not found.
                 values: The 3x3 numpy array of tensor values, or None if pair is None.
         """
-        label1 = atom_data[0]
-        idx1 = int(atom_data[1])
-        label2 = atom_data[2]
-        idx2 = int(atom_data[3])
+        label1 = f"{atom_data[0]}_{atom_data[1]}"
+        label2 = f"{atom_data[2]}_{atom_data[3]}"
         values = np.reshape(atom_data[4:], (3, 3))
 
-        pair = self.particle_pair_lookup.get(((label1, idx1), (label2, idx2)))
+        pair = self.particle_pair_lookup.get((label1, label2))
         if pair is None:
             logger.warning(
-                f'Could not find AtomsState pair for ({label1}, {idx1})-({label2}, {idx2})'
+                f'Could not find AtomsState pair for {label1}-{label2}'
             )
             return None, None
         return pair, values
