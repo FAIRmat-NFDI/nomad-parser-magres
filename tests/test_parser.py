@@ -105,14 +105,14 @@ def test_single_point_ethanol(parser):
         ms.normalize(archive, logger)
         # The normalized name should be same as label[i]
         assert ms.name == ms.entity_ref.label
-    # Check tensor value
+    # Check tensor value (now stored in ppm units)
     assert np.isclose(
         output.magnetic_shieldings[3].value.magnitude,
         np.array(
                 [
-                    [3.22898154856e-5, 5.84330480731e-7, -1.63639006642e-6],
-                    [7.78952021344e-7, 2.26711049351e-5, 1.80797334282e-6],
-                    [-8.10936558433e-8, 2.01393309009e-6, 2.59791612443e-5],
+                    [32.2898154856, 0.584330480731, -1.63639006642],
+                    [0.778952021344, 22.6711049351, 1.80797334282],
+                    [-0.0810936558433, 2.01393309009, 25.9791612443],
                 ]
             ),
     ).all()
@@ -125,17 +125,16 @@ def test_single_point_ethanol(parser):
         efg.normalize(archive, logger)
         # The normalized name should be same as label[i]
         assert efg.name == f"{efg.entity_ref.label}"
-    # Check tensor value
+    # Check tensor value (now stored in Hartree atomic units)
     assert np.isclose(
         output.electric_field_gradients[3].value.magnitude,
         np.array(
                 [
-                    [1.25522205339, 0.60319384091, -1.83473060621],
-                    [0.60319384091, -1.29847323513, -0.40585650492],
-                    [-1.83473060621, -0.40585650492, 0.0432511817317],
+                    [0.125522205339, 0.060319384091, -0.183473060621],
+                    [0.060319384091, -0.129847323513, -0.040585650492],
+                    [-0.183473060621, -0.040585650492, 0.00432511817317],
                 ]
-            )
-            * 9.717362e20,  # Convert to T/m^2
+            ),
     ).all()
     # Check spin-spin coupling contributions are present and have correct length
     assert (
