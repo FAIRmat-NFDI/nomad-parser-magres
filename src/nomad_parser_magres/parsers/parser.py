@@ -834,7 +834,7 @@ class MagresParser(MatchingParser):
         for atom_data in data:
             ps, values = self.extract_particle_state_and_tensor(atom_data, logger)
             sec_ms = self.mag_shielding(entity_ref=ps, indices=[ps._site_index])
-            sec_ms.value = values * 1e-6 * ureg('dimensionless')
+            sec_ms.value = values * ureg('ppm')
             magnetic_shieldings.append(sec_ms)
 
         return magnetic_shieldings
@@ -883,7 +883,7 @@ class MagresParser(MatchingParser):
         for atom_data in data:
             ps, values = self.extract_particle_state_and_tensor(atom_data, logger)
             sec_efg = self.e_field_gradient_class(entity_ref=ps, indices=[ps._site_index])
-            sec_efg.value = values * 9.717362e21 * ureg('V/m^2')
+            sec_efg.value = values * ureg('hartree / bohr**2 / elementary_charge')
             electric_field_gradients.append(sec_efg)
 
         return electric_field_gradients
