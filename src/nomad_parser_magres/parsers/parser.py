@@ -883,7 +883,7 @@ class MagresParser(MatchingParser):
         for atom_data in data:
             ps, values = self.extract_particle_state_and_tensor(atom_data, logger)
             sec_efg = self.e_field_gradient_class(entity_ref=ps, indices=[ps._site_index])
-            sec_efg.value = values * ureg('hartree / bohr**2 / elementary_charge')
+            sec_efg.value = values * ureg('a_u_efg')
             electric_field_gradients.append(sec_efg)
 
         return electric_field_gradients
