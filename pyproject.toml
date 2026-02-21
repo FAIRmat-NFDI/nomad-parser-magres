@@ -32,7 +32,7 @@ dependencies = [
     "nomad-lab @ git+https://github.com/CCP-NC/nomad-FAIR-nmr-units-patch.git@main",
     "nomad-simulations>=0.3.2",
     "nomad-schema-plugin-simulation-workflow>=1.0.1",
-    "nomad-nmr-schema@git+https://github.com/FAIRmat-NFDI/nomad-schema-plugin-nmr.git@075496f9fee8d614b4d333ff12b7da2bfddee473",
+    "nomad-nmr-schema@git+https://github.com/FAIRmat-NFDI/nomad-schema-plugin-nmr.git@f799401d8981eb9080f18e26d524d8eb7535488e",
 ]
 
 [project.urls]
