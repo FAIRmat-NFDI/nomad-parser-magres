@@ -544,7 +544,7 @@ class MagresParser(MatchingParser):
         xc_functional_labels = self._xc_functional_map.get(xc_functional, [])
         xc_sections = []
         for xc in xc_functional_labels:
-            functional = XCFunctional(libxc_name=xc)
+            functional = XCFunctional(functional_key=xc)
             if '_X_' in xc:
                 functional.name = 'exchange'
             elif '_C_' in xc:
@@ -1182,15 +1182,11 @@ class MagresParser(MatchingParser):
             model_method_ref=simulation.model_method[-1],
             model_system_ref=simulation.model_system[-1],
         )
-        if (
-            not simulation.model_system[-1].cell
-            or not simulation.model_system[-1].particle_states
-        ):
+        if not simulation.model_system[-1].particle_states:
             logger.warning(
-                'Could not find the `cell` sub-section or the `MagresParser.atom_state_class` list under particle states.'
+                'Could not find the `MagresParser.atom_state_class` list under particle states.'
             )
             return None
-        cell = simulation.model_system[-1].cell[-1]
 
         # Check if [magres][/magres] was correctly parsed
         magres_data = self.magres_file_parser.get('magres')

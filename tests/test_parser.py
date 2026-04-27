@@ -49,11 +49,7 @@ def test_single_point_ethanol(parser):
     for index, label in enumerate(labels):
         assert model_system.particle_states[index].label == label
 
-    # Cell
-    assert len(model_system.cell) == 1
-    atomic_cell = model_system.cell[0]
-
-    # Lattice vectors: atomic_cell.lattice_vectors is a numpy array (or Quantity) of shape (3, 3)
+    # Lattice vectors: model_system.lattice_vectors is a numpy array (or Quantity) of shape (3, 3)
     expected_lattice = np.array(
         [
             [6.0, 0.0, 0.0],
@@ -61,10 +57,10 @@ def test_single_point_ethanol(parser):
             [0.0, 0.0, 6.0],
         ]
     )
-    lattice_vectors = atomic_cell.lattice_vectors.to('angstrom').magnitude
+    lattice_vectors = model_system.lattice_vectors.to('angstrom').magnitude
     assert np.allclose(lattice_vectors, expected_lattice, atol=1e-8)
 
-    assert atomic_cell.periodic_boundary_conditions == [True, True, True]
+    assert model_system.periodic_boundary_conditions == [True, True, True]
 
     # ModelMethod
     assert len(simulation.model_method) == 1
@@ -75,9 +71,9 @@ def test_single_point_ethanol(parser):
     assert len(dft.xc_functionals) == 2
     # Order is correlation then exchange for PBE in the parser map
     assert dft.xc_functionals[0].name == 'correlation'
-    assert dft.xc_functionals[0].libxc_name == 'GGA_C_PBE'
+    assert dft.xc_functionals[0].functional_key == 'GGA_C_PBE'
     assert dft.xc_functionals[1].name == 'exchange'
-    assert dft.xc_functionals[1].libxc_name == 'GGA_X_PBE'
+    assert dft.xc_functionals[1].functional_key == 'GGA_X_PBE'
     # NumericalSettings
     assert len(dft.numerical_settings) == 1
     k_space = dft.numerical_settings[0]
