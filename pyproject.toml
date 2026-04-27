@@ -27,9 +27,9 @@ maintainers = [
 license = { file = "LICENSE" }
 dependencies = [
     "nomad-lab == 1.4.2",
-    "nomad-simulations @ git+https://github.com/nomad-coe/nomad-simulations.git@46ed5a5d0632eac22267c9d38e9a4c66f43a5b38",
+    "nomad-simulations @ git+https://github.com/nomad-coe/nomad-simulations.git@develop",
     "nomad-schema-plugin-simulation-workflow>=1.0.1",
-    "nomad-nmr-schema@git+https://github.com/FAIRmat-NFDI/nomad-schema-plugin-nmr.git@e12a0132c0b6966f4f574bba6e2fd11b48777285",
+    "nomad-nmr-schema @ git+https://github.com/FAIRmat-NFDI/nomad-schema-plugin-nmr.git@v0.1.4",
 ]
 
 [project.urls]
