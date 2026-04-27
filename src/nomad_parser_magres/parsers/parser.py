@@ -35,7 +35,7 @@ from nomad_simulations.schema_packages.model_method import (
     ModelMethod,
     XCFunctional,
 )
-from nomad_simulations.schema_packages.model_system import AtomicCell, Cell, ModelSystem
+from nomad_simulations.schema_packages.model_system import ModelSystem, Representation
 from nomad_simulations.schema_packages.numerical_settings import KMesh, KSpace
 
 from .workflow import (
@@ -180,7 +180,6 @@ class MagresParser(MatchingParser):
     Attributes:
         simulation_class: The class representing the simulation section.
         program_class: The class representing the program section.
-        cell_class: The class representing the cell section.
         model_system_class: The class representing the model system section.
         model_method_class: The class representing the model method section.
         atom_state_class: The class representing the atom state section.
@@ -203,9 +202,6 @@ class MagresParser(MatchingParser):
             Checks if the units of the NMR quantities are magres standard.
         init_parser(logger: "BoundLogger") -> None:
             Initializes the MagresFileParser with the mainfile and logger.
-        parse_atomic_cell(atoms: Optional[TextParser],
-            logger: "BoundLogger") -> Optional[AtomicCell]:
-            Parses the AtomicCell section from the magres file.
         parse_model_system(logger: "BoundLogger") -> Optional["MagresParser.model_system_class"]:
             Parses the model system section from the magres file.
         parse_xc_functional(calculation_params: Optional[TextParser]) -> list[XCFunctional]:
@@ -215,45 +211,38 @@ class MagresParser(MatchingParser):
             ) -> "MagresParser.model_method_class":
             Parses the model method section by extracting information about the NMR method.
         parse_magnetic_shieldings(magres_data: TextParser,
-            cell: "MagresParser.cell_class",
             atom_state_class: "MagresParser.atom_state_class",
             model_system: "MagresParser.model_system_class",
             logger: "BoundLogger"
             ) -> list["MagresParser.mag_shielding"]:
             Parses the magnetic shieldings from the magres file.
         parse_electric_field_gradients(magres_data: TextParser,
-            cell: "MagresParser.cell_class",
             atom_state_class: "MagresParser.atom_state_class",
             model_system: "MagresParser.model_system_class",
             logger: "BoundLogger"
             ) -> list["MagresParser.e_field_gradient_class"]:
             Parses the electric field gradients from the magres file.
         parse_indirect_spin_spin_couplings(magres_data: TextParser,
-            cell: "MagresParser.cell_class",
             atom_state_class: "MagresParser.atom_state_class",
             model_system: "MagresParser.model_system_class",
             logger: "BoundLogger") -> list["MagresParser.indirect_spin_spin_couplings_class"]:
             Parses the indirect spin-spin couplings (total contribution) from the magres file.
         parse_indirect_spin_spin_couplings_fc(magres_data: TextParser,
-            cell: "MagresParser.cell_class",
             atom_state_class: "MagresParser.atom_state_class",
             model_system: "MagresParser.model_system_class",
             logger: "BoundLogger") -> list["MagresParser.indirect_spin_spin_couplings_fc_class"]:
             Parses the Fermi contact contribution to the indirect spin-spin couplings from the magres file.
         parse_indirect_spin_spin_couplings_orbital_d(magres_data: TextParser,
-            cell: "MagresParser.cell_class",
             atom_state_class: "MagresParser.atom_state_class",
             model_system: "MagresParser.model_system_class",
             logger: "BoundLogger") -> list["MagresParser.indirect_spin_spin_couplings_orbital_d_class"]:
             Parses the orbital diamagnetic contribution to the indirect spin-spin couplings from the magres file.
         parse_indirect_spin_spin_couplings_orbital_p(magres_data: TextParser,
-            cell: "MagresParser.cell_class",
             atom_state_class: "MagresParser.atom_state_class",
             model_system: "MagresParser.model_system_class",
             logger: "BoundLogger") -> list["MagresParser.indirect_spin_spin_couplings_orbital_p_class"]:
             Parses the orbital paramagnetic contribution to the indirect spin-spin couplings from the magres file.
         parse_indirect_spin_spin_couplings_spin(magres_data: TextParser,
-            cell: "MagresParser.cell_class",
             atom_state_class: "MagresParser.atom_state_class",
             model_system: "MagresParser.model_system_class",
             logger: "BoundLogger") -> list["MagresParser.indirect_spin_spin_couplings_spin_class"]:
@@ -279,7 +268,6 @@ class MagresParser(MatchingParser):
     # Data section classes:
     simulation_class = Simulation
     program_class = Program
-    cell_class = Cell
     model_system_class = ModelSystem
     model_method_class = ModelMethod
     atom_state_class = AtomsState
@@ -480,44 +468,6 @@ class MagresParser(MatchingParser):
         # Unrecognized format
         return code, code_version
 
-    def parse_atomic_cell(
-        self, atoms: TextParser | None, logger: 'BoundLogger'
-    ) -> AtomicCell | None:
-        """
-        Parse the `AtomicCell` section from the magres file.
-
-        Args:
-            atoms (Optional[TextParser]): The parsed text section [atoms][/atoms] of the magres file.
-            logger (BoundLogger): The logger to log messages.
-
-        Returns:
-            Optional[AtomicCell]: The parsed `AtomicCell` section.
-        """
-        # Check if [atoms][/atoms] was correctly parsed
-        if not atoms:
-            logger.warning('Could not find atomic structure in magres file.')
-            return None
-        atomic_cell = AtomicCell()
-        atomic_cell.type = 'original'
-
-        # Parse `lattice_vectors` and `periodic_boundary_conditions`
-        try:
-            lattice_vectors = np.reshape(np.array(atoms.get('lattice', [])), (3, 3))
-            atomic_cell.lattice_vectors = lattice_vectors * ureg.angstrom
-            pbc = (
-                [True, True, True]
-                if lattice_vectors is not None
-                else [False, False, False]
-            )
-            atomic_cell.periodic_boundary_conditions = pbc
-        except Exception:
-            logger.warning(
-                'Could not parse `lattice_vectors` and `periodic_boundary_conditions`.'
-            )
-            return None
-
-        return atomic_cell
-
     def parse_model_system(
         self, logger: 'BoundLogger'
     ) -> Optional['MagresParser.model_system_class']:
@@ -537,12 +487,20 @@ class MagresParser(MatchingParser):
             logger.warning('Could not find atomic structure in magres file.')
             return None
 
-        # Parse `MagresParser.model_system_class` and its `cell`
+        # Parse `MagresParser.model_system_class`
         model_system = self.model_system_class()
         model_system.is_representative = True
-        atomic_cell = self.parse_atomic_cell(atoms=atoms, logger=logger)
-        model_system.cell.append(atomic_cell)
 
+        # Parse lattice vectors and PBC directly on ModelSystem
+        try:
+            lattice_vectors = np.reshape(np.array(atoms.get('lattice', [])), (3, 3))
+            model_system.lattice_vectors = lattice_vectors * ureg.angstrom
+            pbc = [True, True, True] if lattice_vectors is not None else [False, False, False]
+            model_system.periodic_boundary_conditions = pbc
+        except Exception:
+            logger.warning('Could not parse lattice_vectors and periodic_boundary_conditions.')
+            return None
+        
         # Parse `positions` and `MagresParser.atom_state_class` list
         atoms_list = atoms.get('atom', [])
         if len(atoms_list) == 0:
@@ -792,7 +750,6 @@ class MagresParser(MatchingParser):
     def parse_magnetic_shieldings(
         self,
         magres_data: TextParser,
-        cell: 'MagresParser.cell_class',
         atom_state_class: 'MagresParser.atom_state_class',
         model_system: 'MagresParser.model_system_class',
         logger: 'BoundLogger',
@@ -842,7 +799,6 @@ class MagresParser(MatchingParser):
     def parse_electric_field_gradients(
         self,
         magres_data: TextParser,
-        cell: 'MagresParser.cell_class',
         atom_state_class: 'MagresParser.atom_state_class',
         model_system: 'MagresParser.model_system_class',
         logger: 'BoundLogger',
@@ -891,7 +847,6 @@ class MagresParser(MatchingParser):
     def parse_indirect_spin_spin_couplings(
         self,
         magres_data: TextParser,
-        cell: 'MagresParser.cell_class',
         atom_state_class: 'MagresParser.atom_state_class',
         model_system: 'MagresParser.model_system_class',
         logger: 'BoundLogger',
@@ -947,7 +902,6 @@ class MagresParser(MatchingParser):
     def parse_indirect_spin_spin_couplings_fc(
         self,
         magres_data: TextParser,
-        cell: 'MagresParser.cell_class',
         atom_state_class: 'MagresParser.atom_state_class',
         model_system: 'MagresParser.model_system_class',
         logger: 'BoundLogger',
@@ -1002,7 +956,6 @@ class MagresParser(MatchingParser):
     def parse_indirect_spin_spin_couplings_orbital_d(
         self,
         magres_data: TextParser,
-        cell: 'MagresParser.cell_class',
         atom_state_class: 'MagresParser.atom_state_class',
         model_system: 'MagresParser.model_system_class',
         logger: 'BoundLogger',
@@ -1059,7 +1012,6 @@ class MagresParser(MatchingParser):
     def parse_indirect_spin_spin_couplings_orbital_p(
         self,
         magres_data: TextParser,
-        cell: 'MagresParser.cell_class',
         atom_state_class: 'MagresParser.atom_state_class',
         model_system: 'MagresParser.model_system_class',
         logger: 'BoundLogger',
@@ -1116,7 +1068,6 @@ class MagresParser(MatchingParser):
     def parse_indirect_spin_spin_couplings_spin(
         self,
         magres_data: TextParser,
-        cell: 'MagresParser.cell_class',
         atom_state_class: 'MagresParser.atom_state_class',
         model_system: 'MagresParser.model_system_class',
         logger: 'BoundLogger',
@@ -1250,7 +1201,6 @@ class MagresParser(MatchingParser):
         # Parse `MagresParser.mag_shielding`
         ms = self.parse_magnetic_shieldings(
             magres_data=magres_data,
-            cell=cell,
             atom_state_class=atomsstate,
             model_system=simulation.model_system[-1],
             logger=logger,
@@ -1261,7 +1211,6 @@ class MagresParser(MatchingParser):
         # Parse `MagresParser.e_field_gradient_class`
         efg = self.parse_electric_field_gradients(
             magres_data=magres_data,
-            cell=cell,
             atom_state_class=atomsstate,
             model_system=simulation.model_system[-1],
             logger=logger,
@@ -1272,7 +1221,6 @@ class MagresParser(MatchingParser):
         # Parse `self.indirect_spin_spin_couplings_class`
         isc = self.parse_indirect_spin_spin_couplings(
             magres_data=magres_data,
-            cell=cell,
             atom_state_class=atomsstate,
             model_system=simulation.model_system[-1],
             logger=logger,
@@ -1283,7 +1231,6 @@ class MagresParser(MatchingParser):
         # Parse `self.indirect_spin_spin_couplings_fc_class`
         isc_fc = self.parse_indirect_spin_spin_couplings_fc(
             magres_data=magres_data,
-            cell=cell,
             atom_state_class=atomsstate,
             model_system=simulation.model_system[-1],
             logger=logger,
@@ -1294,7 +1241,6 @@ class MagresParser(MatchingParser):
         # Parse `self.indirect_spin_spin_couplings_orbital_d_class`
         isc_orbital_d = self.parse_indirect_spin_spin_couplings_orbital_d(
             magres_data=magres_data,
-            cell=cell,
             atom_state_class=atomsstate,
             model_system=simulation.model_system[-1],
             logger=logger,
@@ -1305,7 +1251,6 @@ class MagresParser(MatchingParser):
         # Parse `self.indirect_spin_spin_couplings_orbital_p_class`
         isc_orbital_p = self.parse_indirect_spin_spin_couplings_orbital_p(
             magres_data=magres_data,
-            cell=cell,
             atom_state_class=atomsstate,
             model_system=simulation.model_system[-1],
             logger=logger,
@@ -1316,7 +1261,6 @@ class MagresParser(MatchingParser):
         # Parse `self.indirect_spin_spin_couplings_spin_class`
         isc_spin = self.parse_indirect_spin_spin_couplings_spin(
             magres_data=magres_data,
-            cell=cell,
             atom_state_class=atomsstate,
             model_system=simulation.model_system[-1],
             logger=logger,
