@@ -36,6 +36,7 @@ from nomad_simulations.schema_packages.model_method import (
     XCFunctional,
 )
 from nomad_simulations.schema_packages.model_system import ModelSystem, Representation
+from nomad_simulations.schema_packages.basis_set import BasisSetContainer, PlaneWaveBasisSet
 from nomad_simulations.schema_packages.numerical_settings import KMesh, KSpace
 
 from .workflow import (
@@ -92,7 +93,7 @@ class MagresFileParser(TextParser):
                         Quantity('xcfunctional', r'calc\_xcfunctional *([\w]+)'),
                         Quantity(
                             'cutoffenergy',
-                            rf'calc\_cutoffenergy({re_float})(?P<__unit>\w+)',
+                            rf'calc\_cutoffenergy({re_float})',
                         ),
                         Quantity(
                             'pspot',
@@ -553,6 +554,7 @@ class MagresParser(MatchingParser):
         Returns:
             Optional[MagresParser.model_method_class]: The parsed `MagresParser.model_method_class` section.
         """
+        # Parse program information
         model_method = DFT(name='NMR')
 
         # Parse `XCFunctinals` information
@@ -570,6 +572,20 @@ class MagresParser(MatchingParser):
                 if logger:
                     logger.warning(f'Failed to parse program information: {e}')
                 model_method.name = 'NMR'
+
+        # Basis set parsing (adding cutoff energies units check)
+        cutoff = calculation_params.get('cutoffenergy')
+        if cutoff is not None:
+            cutoff_units = self.magres_file_parser.get('cutoffenergy_units', 'eV')
+            if cutoff_units == 'Hartree':
+                cutoff_units = 'hartree'
+            cutoff_value = float(cutoff) * ureg(cutoff_units)
+            pw_basis = PlaneWaveBasisSet(
+                cutoff_energy=cutoff_value.to('joule').magnitude
+            )
+            model_method.numerical_settings.append(
+                BasisSetContainer(basis_set_components=[pw_basis])
+            )
 
         # Parse `KSpace` as a `NumericalSettings` section
         kpoint_mp_offset = calculation_params.get('kpoint_mp_offset', [0, 0, 0])
