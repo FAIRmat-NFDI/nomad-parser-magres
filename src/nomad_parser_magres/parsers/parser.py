@@ -1392,7 +1392,7 @@ class MagresParser(MatchingParser):
             simulation.model_system.append(model_system)
 
         # `MagresParser.model_method_class` parsing
-        model_method = self.parse_model_method(calculation_params=calculation_params)
+        model_method = self.parse_model_method(calculation_params=calculation_params, logger=logger)
         simulation.model_method.append(model_method)
 
         # `self.magres_outputs` parsing
