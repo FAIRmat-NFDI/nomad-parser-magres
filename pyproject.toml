@@ -26,7 +26,7 @@ maintainers = [
 ]
 license = { file = "LICENSE" }
 dependencies = [
-    "nomad-lab == 1.4.2",
+    "nomad-lab >= 1.4.2",
     "nomad-simulations @ git+https://github.com/nomad-coe/nomad-simulations.git@develop",
     "nomad-schema-plugin-simulation-workflow>=1.0.1",
     "nomad-nmr-schema @ git+https://github.com/FAIRmat-NFDI/nomad-schema-plugin-nmr.git@v0.1.4",
