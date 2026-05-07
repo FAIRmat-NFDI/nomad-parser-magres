@@ -557,23 +557,19 @@ class MagresParser(MatchingParser):
 
         # Parse `XCFunctinals` information
         xc_functionals = self.parse_xc_functional(calculation_params=calculation_params)
-        if len(xc_functionals) > 0:
-            model_method.xc_functionals = xc_functionals
-
-        # TODO add when @ndaelman-hu finishes implementation of `BasisSet`
-        # # Basis set parsing (adding cutoff energies units check)
-        # cutoff = calculation_params.get('cutoffenergy')
-        # if cutoff.dimensionless:
-        #     cutoff_units = self.magres_file_parser.get('cutoffenergy_units', 'eV')
-        #     if cutoff_units == 'Hartree':
-        #         cutoff_units = 'hartree'
-        #     cutoff = cutoff.magnitude * ureg(cutoff_units)
-        # sec_basis_set = BasisSetContainer(
-        #     type='plane waves',
-        #     scope=['wavefunction'],
-        #     basis_set=[BasisSet(scope=['valence'], type='plane waves', cutoff=cutoff)],
-        # )
-        # sec_method.electrons_representation.append(sec_basis_set)
+        if xc_functionals is not None:
+            model_method.xc = xc_functionals
+        if calculation_params is not None:
+            try:
+                program_name, program_version = self._parse_program_info(calculation_params, logger)
+                # Note: Program info typically stored in separate Program section in simulation,
+                # but we can store the method-relevant info in DFT.name if needed
+                if program_name and program_name.strip():
+                    model_method.name = f'NMR ({program_name})'
+            except Exception as e:
+                if logger:
+                    logger.warning(f'Failed to parse program information: {e}')
+                model_method.name = 'NMR'
 
         # Parse `KSpace` as a `NumericalSettings` section
         kpoint_mp_offset = calculation_params.get('kpoint_mp_offset', [0, 0, 0])
