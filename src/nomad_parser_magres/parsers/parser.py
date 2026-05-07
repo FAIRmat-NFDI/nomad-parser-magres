@@ -537,7 +537,7 @@ class MagresParser(MatchingParser):
         return functional
 
     def parse_model_method(
-        self, calculation_params: TextParser | None
+        self, calculation_params: TextParser | None, logger=None
     ) -> 'MagresParser.model_method_class':
         """
         Parse the `MagresParser.model_method_class` section by extracting information about the NMR method: basis set,
