@@ -66,17 +66,22 @@ def test_single_point_ethanol(parser):
     assert len(simulation.model_method) == 1
     dft = simulation.model_method[0]
     assert dft.m_def.name == 'DFT'
-    assert dft.name == 'NMR'
-    # XC functionals
-    assert len(dft.xc_functionals) == 2
-    # Order is correlation then exchange for PBE in the parser map
-    assert dft.xc_functionals[0].name == 'correlation'
-    assert dft.xc_functionals[0].functional_key == 'GGA_C_PBE'
-    assert dft.xc_functionals[1].name == 'exchange'
-    assert dft.xc_functionals[1].functional_key == 'GGA_X_PBE'
-    # NumericalSettings
-    assert len(dft.numerical_settings) == 1
-    k_space = dft.numerical_settings[0]
+    assert dft.name == 'NMR (CASTEP)'
+    # XC functional - single XCFunctional object (not a list)
+    assert dft.xc is not None
+    assert dft.xc.functional_key == 'PBE'
+    # NumericalSettings: BasisSetContainer (index 0) + KSpace (index 1)
+    assert len(dft.numerical_settings) == 2
+    # Basis set (cutoff energy)
+    basis_container = dft.numerical_settings[0]
+    assert basis_container.m_def.name == 'BasisSetContainer'
+    assert len(basis_container.basis_set_components) == 1
+    pw_basis = basis_container.basis_set_components[0]
+    assert pw_basis.m_def.name == 'PlaneWaveBasisSet'
+    # ethanol: cutoffenergy = 40.0 Hartree -> 1088.46 eV
+    assert np.isclose(pw_basis.cutoff_energy.to('eV').magnitude, 1088.455449839241, rtol=1e-6)
+    # KSpace
+    k_space = dft.numerical_settings[1]
     assert k_space.m_def.name == 'KSpace'
     # KMesh
     assert len(k_space.k_mesh) == 1
