@@ -292,22 +292,6 @@ class MagresParser(MatchingParser):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.magres_file_parser = MagresFileParser()
-        self._xc_functional_map = {
-            'LDA': ['LDA_C_PZ', 'LDA_X_PZ'],
-            'PW91': ['GGA_C_PW91', 'GGA_X_PW91'],
-            'PBE': ['GGA_C_PBE', 'GGA_X_PBE'],
-            'RPBE': ['GGA_X_RPBE'],
-            'WC': ['GGA_C_PBE_GGA_X_WC'],
-            'PBESOL': ['GGA_X_RPBE'],
-            'BLYP': ['GGA_C_LYP', 'LDA_X_B88'],
-            'B3LYP': ['HYB_GGA_XC_B3LYP5'],
-            'HF': ['HF_X'],
-            'HF-LDA': ['HF_X_LDA_C_PW'],
-            'PBE0': ['HYB_GGA_XC_PBEH'],
-            'HSE03': ['HYB_GGA_XC_HSE03'],
-            'HSE06': ['HYB_GGA_XC_HSE06'],
-            'RSCAN': ['MGGA_X_RSCAN', 'MGGA_C_RSCAN'],
-        }
         # Jacob's ladder classification mapping
         self._xc_functional_type_map = {
             'LDA': 'LDA',
@@ -529,32 +513,28 @@ class MagresParser(MatchingParser):
 
     def parse_xc_functional(
         self, calculation_params: TextParser | None
-    ) -> list[XCFunctional]:
+    ) -> Optional[XCFunctional]:
         """
-        Parse the exchange-correlation functional information from the magres file. This
-        uses the `libxc` naming convention.
+        Parse the exchange-correlation functional information from the magres file.
+        Creates a single XCFunctional object using high-level functional names.
+        The new architecture automatically expands to components during normalization.
 
         Args:
             calculation_params (Optional[TextParser]): The parsed [calculation][/calculation] block parameters.
 
         Returns:
-            list[XCFunctional]: The parsed `XCFunctional` sections.
+            Optional[XCFunctional]: The parsed `XCFunctional` section, or None if not available.
         """
-        xc_functional = calculation_params.get('xcfunctional', 'LDA')
-        xc_functional_labels = self._xc_functional_map.get(xc_functional, [])
-        xc_sections = []
-        for xc in xc_functional_labels:
-            functional = XCFunctional(functional_key=xc)
-            if '_X_' in xc:
-                functional.name = 'exchange'
-            elif '_C_' in xc:
-                functional.name = 'correlation'
-            elif 'HYB' in xc:
-                functional.name = 'hybrid'
-            else:
-                functional.name = 'contribution'
-            xc_sections.append(functional)
-        return xc_sections
+        if calculation_params is None:
+            return None
+
+        xc_functional_name = calculation_params.get('xcfunctional', 'LDA')
+
+        # Create single XCFunctional with high-level name (not libxc components)
+        # Check if the normalization process automaticallys create components
+        functional = XCFunctional(functional_key=xc_functional_name)
+    
+        return functional
 
     def parse_model_method(
         self, calculation_params: TextParser | None
