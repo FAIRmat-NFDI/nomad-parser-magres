@@ -567,10 +567,10 @@ class MagresParser(MatchingParser):
                 # Note: Program info typically stored in separate Program section in simulation,
                 # but we can store the method-relevant info in DFT.name if needed
                 if program_name and program_name.strip():
-                    model_method.name = f'NMR ({program_name})'
+                    model_method.name = 'NMR'
             except Exception as e:
                 if logger:
-                    logger.warning(f'Failed to parse program information: {e}')
+                    logger.warning('Failed to parse program information', exc_info=str(e))
                 model_method.name = 'NMR'
 
         # Basis set parsing (adding cutoff energies units check)
@@ -624,12 +624,14 @@ class MagresParser(MatchingParser):
             label = getattr(ps, 'label', None)  # label is now label_index (e.g., H1_1)
             if label is None:
                 logger.error(
-                    f'`AtomsState` for particle state {ps} is missing a valid `label` attribute.'
+                    '`AtomsState` for particle state is missing a valid `label` attribute.',
+                    particle_state=str(ps),
                 )
                 continue
             if index is None:
                 logger.error(
-                    f'`AtomsState` for particle state {ps} is missing a valid `index` attribute.'
+                    '`AtomsState` for particle state is missing a valid `index` attribute.',
+                    particle_state=str(ps),
                 )
                 continue
             # Use label_index as the only key (label is already unique)
@@ -665,12 +667,14 @@ class MagresParser(MatchingParser):
             label = getattr(ps, 'label', None)  # label is now label_index (e.g., H1_1)
             if label is None:
                 logger.error(
-                    f'`AtomsState` for particle state {ps} is missing a valid `label` attribute.'
+                    '`AtomsState` for particle state is missing a valid `label` attribute.',
+                    particle_state=str(ps),
                 )
                 continue
             if idx is None:
                 logger.error(
-                    f'`AtomsState` for particle state {ps} is missing a valid `index` attribute.'
+                    '`AtomsState` for particle state is missing a valid `label` attribute.',
+                    particle_state=str(ps),
                 )
                 continue
             label_index_to_ps[label] = ps
@@ -734,7 +738,9 @@ class MagresParser(MatchingParser):
         pair = self.particle_pair_lookup.get((label1, label2))
         if pair is None:
             logger.warning(
-                f'Could not find AtomsState pair for {label1}-{label2}'
+                'Could not find AtomsState pair.',
+                label_1=label1,
+                label_2=label2,
             )
             return None, None
         return pair, values

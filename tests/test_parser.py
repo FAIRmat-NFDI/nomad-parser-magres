@@ -66,7 +66,7 @@ def test_single_point_ethanol(parser):
     assert len(simulation.model_method) == 1
     dft = simulation.model_method[0]
     assert dft.m_def.name == 'DFT'
-    assert dft.name == 'NMR (CASTEP)'
+    assert dft.name == 'NMR'
     # XC functional - single XCFunctional object (not a list)
     assert dft.xc is not None
     assert dft.xc.functional_key == 'PBE'
