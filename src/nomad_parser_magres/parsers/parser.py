@@ -529,12 +529,14 @@ class MagresParser(MatchingParser):
         if calculation_params is None:
             return None
 
-        xc_functional_name = calculation_params.get('xcfunctional', 'LDA')
+        xc_functional_name = calculation_params.get('xcfunctional')
+        if xc_functional_name is None:
+            return None
 
         # Create single XCFunctional with high-level name (not libxc components)
         # Check if the normalization process automaticallys create components
         functional = XCFunctional(functional_key=xc_functional_name)
-    
+
         return functional
 
     def parse_model_method(
