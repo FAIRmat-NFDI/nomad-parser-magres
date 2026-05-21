@@ -589,14 +589,23 @@ class MagresParser(MatchingParser):
                 BasisSetContainer(basis_set_components=[pw_basis])
             )
 
-        # Parse `KSpace` as a `NumericalSettings` section
-        kpoint_mp_offset = calculation_params.get('kpoint_mp_offset', [0, 0, 0])
-        kpoint_mp_offset = [float(x) for x in kpoint_mp_offset]
-        k_mesh = KMesh(
-            grid=calculation_params.get('kpoint_mp_grid', [1, 1, 1]),
-            offset=kpoint_mp_offset,
-        )
-        model_method.numerical_settings.append(KSpace(k_mesh=[k_mesh]))
+        # Parse `KSpace` as a `NumericalSettings` section — only when the data
+        # is explicitly present in the calculation block.  When neither
+        # kpoint_mp_grid nor kpoint_mp_offset is found (e.g. legacy QE-GIPAW files
+        # that omit k-point metadata) we leave numerical_settings empty rather
+        # than fabricating [1,1,1] / [0,0,0] defaults that may be wrong.
+        if calculation_params is not None:
+            kpoint_mp_grid = calculation_params.get('kpoint_mp_grid')
+            kpoint_mp_offset_raw = calculation_params.get('kpoint_mp_offset')
+            if kpoint_mp_grid is not None or kpoint_mp_offset_raw is not None:
+                k_mesh_kwargs = {}
+                if kpoint_mp_grid is not None:
+                    k_mesh_kwargs['grid'] = kpoint_mp_grid
+                if kpoint_mp_offset_raw is not None:
+                    k_mesh_kwargs['offset'] = [float(x) for x in kpoint_mp_offset_raw]
+                model_method.numerical_settings.append(
+                    KSpace(k_mesh=[KMesh(**k_mesh_kwargs)])
+                )
 
         return model_method
 
