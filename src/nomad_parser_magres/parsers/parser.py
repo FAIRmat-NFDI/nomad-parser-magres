@@ -616,8 +616,8 @@ class MagresParser(MatchingParser):
                 cutoff_units = _cutoff_unit_map.get(cutoff_units_raw, cutoff_units_raw)
                 cutoff_value = float(cutoff) * ureg(cutoff_units)
                 pw_basis = PlaneWaveBasisSet(
-                    cutoff_energy=cutoff_value.to('joule').magnitude
-                ) # default - convert to joule for internal storage
+                    cutoff_energy=cutoff_value
+                )
                 model_method.numerical_settings.append(
                     BasisSetContainer(basis_set_components=[pw_basis])
                 )
