@@ -96,6 +96,10 @@ class MagresFileParser(TextParser):
                             rf'calc\_cutoffenergy({re_float})',
                         ),
                         Quantity(
+                            'cutoffenergy_inline_units',
+                            r'calc_cutoffenergy[ \t]+[-+]?\d*\.?\d+(?:[Ee][-+]?\d+)?[ \t]+([a-zA-Z]+)',
+                        ),
+                        Quantity(
                             'pspot',
                             r'calc\_pspot *([\w]+) *([\w\.\|\(\)\=\:]+)',
                             repeats=True,
@@ -575,19 +579,48 @@ class MagresParser(MatchingParser):
                     logger.warning('Failed to parse program information', exc_info=str(e))
                 model_method.name = 'NMR'
 
-        # Basis set parsing (adding cutoff energies units check)
+        # Basis set parsing — resolve the energy unit from different possible sources:
+        #   1. Inline unit on the same line as the value (example: QE-GIPAW new format),
+        #      e.g. "calc_cutoffenergy  40.00 Ry"
+        #   2. A top-level "units calc_cutoffenergy Hartree" line (example: CASTEP format)
+        # If neither source provides the unit the cutoff is left unpopulated to
+        # avoid storing an incorrect value.
+        # _cutoff_unit_map is the normalization layer between the raw string from .magres files
+        # and the unit names understood by the `ureg` unit registry.
+        _cutoff_unit_map = {
+            'Ry': 'rydberg',
+            'Ryd': 'rydberg',
+            'Rydberg': 'rydberg',
+            'Ha': 'hartree',
+            'Hartree': 'hartree',
+            'au': 'hartree',
+            'eV': 'eV',
+            'ev': 'eV',
+        }
         cutoff = calculation_params.get('cutoffenergy')
         if cutoff is not None:
-            cutoff_units = self.magres_file_parser.get('cutoffenergy_units', 'eV')
-            if cutoff_units == 'Hartree':
-                cutoff_units = 'hartree'
-            cutoff_value = float(cutoff) * ureg(cutoff_units)
-            pw_basis = PlaneWaveBasisSet(
-                cutoff_energy=cutoff_value.to('joule').magnitude
+            cutoff_units_raw = (
+                calculation_params.get('cutoffenergy_inline_units') #check inline unit first
+                or self.magres_file_parser.get('cutoffenergy_units') #check top-level units
             )
-            model_method.numerical_settings.append(
-                BasisSetContainer(basis_set_components=[pw_basis])
-            )
+            if cutoff_units_raw is None:
+                if logger:
+                    logger.error(
+                        'cutoffenergy value found but its unit is not declared '
+                        '(neither inline nor via a "units calc_cutoffenergy" '
+                        'line); skipping basis-set section to avoid storing '
+                        'an incorrect value.'
+                    )
+            else:
+                # find unit alias for pint or map to self (unit already in pijnt registered form)
+                cutoff_units = _cutoff_unit_map.get(cutoff_units_raw, cutoff_units_raw)
+                cutoff_value = float(cutoff) * ureg(cutoff_units)
+                pw_basis = PlaneWaveBasisSet(
+                    cutoff_energy=cutoff_value.to('joule').magnitude
+                ) # default - convert to joule for internal storage
+                model_method.numerical_settings.append(
+                    BasisSetContainer(basis_set_components=[pw_basis])
+                )
 
         # Parse `KSpace` as a `NumericalSettings` section — only when the data
         # is explicitly present in the calculation block.  When neither

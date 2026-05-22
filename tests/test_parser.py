@@ -186,3 +186,142 @@ def test_single_point_ethanol(parser):
                 ]
             ),
     ).all()
+
+
+# ---------------------------------------------------------------------------
+# Cutoff-energy parsing – full coverage checklist
+# ---------------------------------------------------------------------------
+# Each test maps to one cell of the 2×4 matrix:
+#   code        × (unit storage)  × (notation)
+#
+#  ID  Description                                    File
+#  [1] CASTEP  inline eV      decimal    (real)       silicon.magres
+#  [2] CASTEP  inline eV      scientific (synthetic)  castep_cutoff_ev_scientific.magres
+#  [3] CASTEP  separate Ha    decimal    (synthetic)  castep_cutoff_hartree_decimal.magres
+#  [4] CASTEP  separate Ha    scientific (real)       ethanol_nmr.magres  ← test_single_point_ethanol
+#  [5] QE      inline Ry      decimal    (real)       quartz.nmr.magres
+#  [6] QE      inline Ry      scientific (synthetic)  qe_cutoff_ry_scientific.magres
+#  [7] no-unit decimal        (error path, synthetic) no_unit_cutoff.magres
+#  [8] no-unit scientific     (error path, synthetic) no_unit_cutoff_scientific.magres
+#
+# Unit conversion references (pint):
+#   1 Hartree = 27.211386245988 eV
+#   1 Rydberg = 13.60569225 eV
+# ---------------------------------------------------------------------------
+
+def _get_cutoff_ev(dft):
+    """Return cutoff energy in eV from the first BasisSetContainer found, or None."""
+    for ns in dft.numerical_settings:
+        if ns.m_def.name == 'BasisSetContainer':
+            return ns.basis_set_components[0].cutoff_energy.to('eV').magnitude
+    return None
+
+
+# [1] CASTEP inline eV decimal (silicon.magres)
+def test_cutoff_inline_ev(parser):
+    """[1] CASTEP inline eV decimal: 250.00000000 eV  →  250.0 eV."""
+    archive = EntryArchive()
+    parser.parse(
+        os.path.join('tests', 'data', 'silicon.magres'),
+        archive,
+        logger,
+    )
+    dft = archive.data.model_method[0]
+    cutoff_ev = _get_cutoff_ev(dft)
+    assert cutoff_ev is not None, 'BasisSetContainer not found – cutoff was not parsed'
+    assert np.isclose(cutoff_ev, 250.0, rtol=1e-4)
+
+
+# [2] CASTEP inline eV scientific (synthetic file created)
+def test_cutoff_castep_ev_scientific(parser):
+    """[2] CASTEP inline eV scientific: 2.50000000E+02 eV  →  250.0 eV."""
+    archive = EntryArchive()
+    parser.parse(
+        os.path.join('tests', 'data', 'castep_cutoff_ev_scientific.magres'),
+        archive,
+        logger,
+    )
+    dft = archive.data.model_method[0]
+    cutoff_ev = _get_cutoff_ev(dft)
+    assert cutoff_ev is not None, 'BasisSetContainer not found – cutoff was not parsed'
+    assert np.isclose(cutoff_ev, 250.0, rtol=1e-4)
+
+
+# [3] CASTEP separate Hartree decimal (synthetic file created)
+def test_cutoff_castep_hartree_decimal(parser):
+    """[3] CASTEP separate Hartree declaration, decimal: 40.0 Ha  →  ~1088.46 eV."""
+    archive = EntryArchive()
+    parser.parse(
+        os.path.join('tests', 'data', 'castep_cutoff_hartree_decimal.magres'),
+        archive,
+        logger,
+    )
+    dft = archive.data.model_method[0]
+    cutoff_ev = _get_cutoff_ev(dft)
+    assert cutoff_ev is not None, 'BasisSetContainer not found – cutoff was not parsed'
+    # 1 Ha = 27.211386245988 eV
+    assert np.isclose(cutoff_ev, 40.0 * 27.211386245988, rtol=1e-4)
+
+
+# [4] CASTEP separate Hartree scientific → covered by test_single_point_ethanol
+
+
+# [5] QE inline Ry decimal (quartz.nmr.magres)
+def test_cutoff_inline_ry(parser):
+    """[5] QE inline Ry decimal: 40.00 Ry  →  40 × 13.6057 ≈ 544.23 eV."""
+    archive = EntryArchive()
+    parser.parse(
+        os.path.join('tests', 'data', 'quartz.nmr.magres'),
+        archive,
+        logger,
+    )
+    dft = archive.data.model_method[0]
+    cutoff_ev = _get_cutoff_ev(dft)
+    assert cutoff_ev is not None, 'BasisSetContainer not found – cutoff was not parsed'
+    # 1 Ry = 13.60569225 eV
+    assert np.isclose(cutoff_ev, 40.0 * 13.60569225, rtol=1e-4)
+
+
+# [6] QE inline Ry scientific (synthetic file created)
+def test_cutoff_qe_ry_scientific(parser):
+    """[6] QE inline Ry scientific: 4.00000E+01 Ry  →  40 × 13.6057 ≈ 544.23 eV."""
+    archive = EntryArchive()
+    parser.parse(
+        os.path.join('tests', 'data', 'qe_cutoff_ry_scientific.magres'),
+        archive,
+        logger,
+    )
+    dft = archive.data.model_method[0]
+    cutoff_ev = _get_cutoff_ev(dft)
+    assert cutoff_ev is not None, 'BasisSetContainer not found – cutoff was not parsed'
+    assert np.isclose(cutoff_ev, 40.0 * 13.60569225, rtol=1e-4)
+
+
+# [7] No unit – decimal value (error path)
+def test_cutoff_no_unit(parser):
+    """[7] Decimal value only, no unit declared: must warn and skip BasisSetContainer."""
+    archive = EntryArchive()
+    parser.parse(
+        os.path.join('tests', 'data', 'no_unit_cutoff.magres'),
+        archive,
+        logger,
+    )
+    dft = archive.data.model_method[0]
+    assert _get_cutoff_ev(dft) is None, (
+        'BasisSetContainer should NOT be populated when no unit is declared'
+    )
+
+
+# [8] No unit – scientific value (error path)
+def test_cutoff_no_unit_scientific(parser):
+    """[8] Scientific value only, no unit declared: must warn and skip BasisSetContainer."""
+    archive = EntryArchive()
+    parser.parse(
+        os.path.join('tests', 'data', 'no_unit_cutoff_scientific.magres'),
+        archive,
+        logger,
+    )
+    dft = archive.data.model_method[0]
+    assert _get_cutoff_ev(dft) is None, (
+        'BasisSetContainer should NOT be populated when no unit is declared'
+    )

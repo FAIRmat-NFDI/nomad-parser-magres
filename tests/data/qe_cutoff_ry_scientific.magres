@@ -1,0 +1,18 @@
+#$magres-abinitio-v1.0
+# Synthetic: QE-GIPAW, inline Ry unit, scientific notation value
+[calculation]
+calc_code QE-GIPAW
+calc_code_version 7.4.1
+calc_cutoffenergy 4.00000E+01 Ry
+calc_xcfunctional PBE
+[/calculation]
+[atoms]
+  units lattice Angstrom
+  units atom Angstrom
+  lattice 4.0 0.0 0.0 0.0 4.0 0.0 0.0 0.0 4.0
+  atom H H1 1 0.5 0.5 0.5
+[/atoms]
+[magres]
+  units ms ppm
+  ms H1 1 30.0 0.0 0.0 0.0 30.0 0.0 0.0 0.0 30.0
+[/magres]
