@@ -313,6 +313,18 @@ class MagresParser(MatchingParser):
             'RSCAN': 'meta_GGA',
             'HF': 'HF'
         }
+        # _cutoff_unit_map is the normalization layer between the raw string from .magres files
+        # and the unit names understood by the `ureg` unit registry.
+        self._cutoff_unit_map = {
+            'Ry': 'rydberg',
+            'Ryd': 'rydberg',
+            'Rydberg': 'rydberg',
+            'Ha': 'hartree',
+            'Hartree': 'hartree',
+            'au': 'hartree',
+            'eV': 'eV',
+            'ev': 'eV',
+        }
         self.particle_lookup = {}  # To ensure associaton of particle states with correct magres data
         self.particle_pair_lookup = {}  # To ensure association of particle pairs with correct magres data
 
@@ -585,18 +597,6 @@ class MagresParser(MatchingParser):
         #   2. A top-level "units calc_cutoffenergy Hartree" line (example: CASTEP format)
         # If neither source provides the unit the cutoff is left unpopulated to
         # avoid storing an incorrect value.
-        # _cutoff_unit_map is the normalization layer between the raw string from .magres files
-        # and the unit names understood by the `ureg` unit registry.
-        _cutoff_unit_map = {
-            'Ry': 'rydberg',
-            'Ryd': 'rydberg',
-            'Rydberg': 'rydberg',
-            'Ha': 'hartree',
-            'Hartree': 'hartree',
-            'au': 'hartree',
-            'eV': 'eV',
-            'ev': 'eV',
-        }
         cutoff = calculation_params.get('cutoffenergy')
         if cutoff is not None:
             cutoff_units_raw = (
@@ -612,8 +612,8 @@ class MagresParser(MatchingParser):
                         'an incorrect value.'
                     )
             else:
-                # find unit alias for pint or map to self (unit already in pijnt registered form)
-                cutoff_units = _cutoff_unit_map.get(cutoff_units_raw, cutoff_units_raw)
+                # find unit alias for pint or map to self (unit already in pint registered form)
+                cutoff_units = self._cutoff_unit_map.get(cutoff_units_raw, cutoff_units_raw)
                 cutoff_value = float(cutoff) * ureg(cutoff_units)
                 pw_basis = PlaneWaveBasisSet(
                     cutoff_energy=cutoff_value
