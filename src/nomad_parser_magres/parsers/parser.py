@@ -96,6 +96,10 @@ class MagresFileParser(TextParser):
                             rf'calc\_cutoffenergy({re_float})',
                         ),
                         Quantity(
+                            'cutoffenergy_inline_units',
+                            r'calc_cutoffenergy[ \t]+[-+]?\d*\.?\d+(?:[Ee][-+]?\d+)?[ \t]+([a-zA-Z]+)',
+                        ),
+                        Quantity(
                             'pspot',
                             r'calc\_pspot *([\w]+) *([\w\.\|\(\)\=\:]+)',
                             repeats=True,
@@ -308,6 +312,18 @@ class MagresParser(MatchingParser):
             'HSE06': 'hyb_GGA',
             'RSCAN': 'meta_GGA',
             'HF': 'HF'
+        }
+        # _cutoff_unit_map is the normalization layer between the raw string from .magres files
+        # and the unit names understood by the `ureg` unit registry.
+        self._cutoff_unit_map = {
+            'Ry': 'rydberg',
+            'Ryd': 'rydberg',
+            'Rydberg': 'rydberg',
+            'Ha': 'hartree',
+            'Hartree': 'hartree',
+            'au': 'hartree',
+            'eV': 'eV',
+            'ev': 'eV',
         }
         self.particle_lookup = {}  # To ensure associaton of particle states with correct magres data
         self.particle_pair_lookup = {}  # To ensure association of particle pairs with correct magres data
@@ -529,12 +545,14 @@ class MagresParser(MatchingParser):
         if calculation_params is None:
             return None
 
-        xc_functional_name = calculation_params.get('xcfunctional', 'LDA')
+        xc_functional_name = calculation_params.get('xcfunctional')
+        if xc_functional_name is None:
+            return None
 
         # Create single XCFunctional with high-level name (not libxc components)
         # Check if the normalization process automaticallys create components
         functional = XCFunctional(functional_key=xc_functional_name)
-    
+
         return functional
 
     def parse_model_method(
@@ -573,28 +591,54 @@ class MagresParser(MatchingParser):
                     logger.warning('Failed to parse program information', exc_info=str(e))
                 model_method.name = 'NMR'
 
-        # Basis set parsing (adding cutoff energies units check)
+        # Basis set parsing — resolve the energy unit from different possible sources:
+        #   1. Inline unit on the same line as the value (example: QE-GIPAW new format),
+        #      e.g. "calc_cutoffenergy  40.00 Ry"
+        #   2. A top-level "units calc_cutoffenergy Hartree" line (example: CASTEP format)
+        # If neither source provides the unit the cutoff is left unpopulated to
+        # avoid storing an incorrect value.
         cutoff = calculation_params.get('cutoffenergy')
         if cutoff is not None:
-            cutoff_units = self.magres_file_parser.get('cutoffenergy_units', 'eV')
-            if cutoff_units == 'Hartree':
-                cutoff_units = 'hartree'
-            cutoff_value = float(cutoff) * ureg(cutoff_units)
-            pw_basis = PlaneWaveBasisSet(
-                cutoff_energy=cutoff_value.to('joule').magnitude
+            cutoff_units_raw = (
+                calculation_params.get('cutoffenergy_inline_units') #check inline unit first
+                or self.magres_file_parser.get('cutoffenergy_units') #check top-level units
             )
-            model_method.numerical_settings.append(
-                BasisSetContainer(basis_set_components=[pw_basis])
-            )
+            if cutoff_units_raw is None:
+                if logger:
+                    logger.error(
+                        'cutoffenergy value found but its unit is not declared '
+                        '(neither inline nor via a "units calc_cutoffenergy" '
+                        'line); skipping basis-set section to avoid storing '
+                        'an incorrect value.'
+                    )
+            else:
+                # find unit alias for pint or map to self (unit already in pint registered form)
+                cutoff_units = self._cutoff_unit_map.get(cutoff_units_raw, cutoff_units_raw)
+                cutoff_value = float(cutoff) * ureg(cutoff_units)
+                pw_basis = PlaneWaveBasisSet(
+                    cutoff_energy=cutoff_value
+                )
+                model_method.numerical_settings.append(
+                    BasisSetContainer(basis_set_components=[pw_basis])
+                )
 
-        # Parse `KSpace` as a `NumericalSettings` section
-        kpoint_mp_offset = calculation_params.get('kpoint_mp_offset', [0, 0, 0])
-        kpoint_mp_offset = [float(x) for x in kpoint_mp_offset]
-        k_mesh = KMesh(
-            grid=calculation_params.get('kpoint_mp_grid', [1, 1, 1]),
-            offset=kpoint_mp_offset,
-        )
-        model_method.numerical_settings.append(KSpace(k_mesh=[k_mesh]))
+        # Parse `KSpace` as a `NumericalSettings` section — only when the data
+        # is explicitly present in the calculation block.  When neither
+        # kpoint_mp_grid nor kpoint_mp_offset is found (e.g. legacy QE-GIPAW files
+        # that omit k-point metadata) we leave numerical_settings empty rather
+        # than fabricating [1,1,1] / [0,0,0] defaults that may be wrong.
+        if calculation_params is not None:
+            kpoint_mp_grid = calculation_params.get('kpoint_mp_grid')
+            kpoint_mp_offset_raw = calculation_params.get('kpoint_mp_offset')
+            if kpoint_mp_grid is not None or kpoint_mp_offset_raw is not None:
+                k_mesh_kwargs = {}
+                if kpoint_mp_grid is not None:
+                    k_mesh_kwargs['grid'] = kpoint_mp_grid
+                if kpoint_mp_offset_raw is not None:
+                    k_mesh_kwargs['offset'] = [float(x) for x in kpoint_mp_offset_raw]
+                model_method.numerical_settings.append(
+                    KSpace(k_mesh=[KMesh(**k_mesh_kwargs)])
+                )
 
         return model_method
 

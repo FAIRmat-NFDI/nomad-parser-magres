@@ -1,0 +1,19 @@
+#$magres-abinitio-v1.0
+# Synthetic: CASTEP, separate Hartree declaration, decimal value
+[calculation]
+calc_code CASTEP
+calc_code_version 7.0
+calc_cutoffenergy 40.0
+calc_xcfunctional PBE
+units calc_cutoffenergy Hartree
+[/calculation]
+[atoms]
+  units lattice Angstrom
+  units atom Angstrom
+  lattice 4.0 0.0 0.0 0.0 4.0 0.0 0.0 0.0 4.0
+  atom H H1 1 0.5 0.5 0.5
+[/atoms]
+[magres]
+  units ms ppm
+  ms H1 1 30.0 0.0 0.0 0.0 30.0 0.0 0.0 0.0 30.0
+[/magres]

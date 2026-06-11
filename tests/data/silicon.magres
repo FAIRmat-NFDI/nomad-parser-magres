@@ -1,0 +1,169 @@
+#$magres-abinitio-v1.0
+# See http://www.ccpnc.ac.uk/pmwiki.php/CCPNC/Fileformat for format definition and code samples and libraries
+[calculation]
+calc_code CASTEP
+calc_code_version 8.0
+calc_code_hgversion 7a66ba17f5c9+  Mon, 08 Dec 2014 20:23:19 +0000                  
+calc_code_platform linux_x86_64_ifort15                                            
+calc_name Si
+calc_comment                                                                                 
+calc_xcfunctional PW91           
+calc_cutoffenergy    250.00000000 eV
+calc_pspot Si 3|1.8|1|3|6|30:31:32
+calc_kpoint_mp_grid 222222
+calc_kpoint_mp_offset       0.00000000      0.00000000      0.00000000
+[/calculation]
+[atoms]
+units lattice Angstrom
+lattice           0.0000000000000000E+00          2.7343793000000001E+00          2.7343793000000001E+00          2.7343793000000001E+00          0.0000000000000000E+00          2.7343793000000001E+00          2.7343793000000001E+00          2.7343793000000001E+00          0.0000000000000000E+00
+units atom Angstrom
+symmetry x,y,z
+symmetry -y+1/4,-z+1/4,x+y+z+1/4
+symmetry z,-x-y-z,x
+symmetry x+y+z+1/4,-x+1/4,-y+1/4
+symmetry -x-y-z,z,y
+symmetry -x+1/4,x+y+z+1/4,-z+1/4
+symmetry y,x,-x-y-z
+symmetry -z+1/4,-y+1/4,-x+1/4
+symmetry -x-y-z,x,z
+symmetry -x+1/4,-y+1/4,x+y+z+1/4
+symmetry y,z,x
+symmetry -z+1/4,x+y+z+1/4,-y+1/4
+symmetry x,-x-y-z,y
+symmetry -y+1/4,-x+1/4,-z+1/4
+symmetry z,y,-x-y-z
+symmetry x+y+z+1/4,-z+1/4,-x+1/4
+symmetry y,-x-y-z,z
+symmetry -z+1/4,-x+1/4,x+y+z+1/4
+symmetry -x-y-z,y,x
+symmetry -x+1/4,-z+1/4,-y+1/4
+symmetry z,x,y
+symmetry x+y+z+1/4,-y+1/4,-z+1/4
+symmetry x,z,-x-y-z
+symmetry -y+1/4,x+y+z+1/4,-x+1/4
+symmetry -x+1/4,-y+1/4,-z+1/4
+symmetry y,z,-x-y-z
+symmetry -z+1/4,x+y+z+1/4,-x+1/4
+symmetry -x-y-z,x,y
+symmetry x+y+z+1/4,-z+1/4,-y+1/4
+symmetry x,-x-y-z,z
+symmetry -y+1/4,-x+1/4,x+y+z+1/4
+symmetry z,y,x
+symmetry x+y+z+1/4,-x+1/4,-z+1/4
+symmetry x,y,-x-y-z
+symmetry -y+1/4,-z+1/4,-x+1/4
+symmetry z,-x-y-z,y
+symmetry -x+1/4,x+y+z+1/4,-y+1/4
+symmetry y,x,z
+symmetry -z+1/4,-y+1/4,x+y+z+1/4
+symmetry -x-y-z,z,x
+symmetry -y+1/4,x+y+z+1/4,-z+1/4
+symmetry z,x,-x-y-z
+symmetry x+y+z+1/4,-y+1/4,-x+1/4
+symmetry x,z,y
+symmetry -z+1/4,-x+1/4,-y+1/4
+symmetry -x-y-z,y,z
+symmetry -x+1/4,-z+1/4,x+y+z+1/4
+symmetry y,-x-y-z,x
+atom Si      Si         1          0.0000000000000000E+00          0.0000000000000000E+00          0.0000000000000000E+00
+atom Si      Si         2          1.3671896500000000E+00          1.3671896500000000E+00          1.3671896500000000E+00
+[/atoms]
+[magres]
+units ms ppm
+ms Si        1          3.9000747401830574E+02         -3.1499555180266488E-03         -3.1499555180267112E-03         -3.1499555180269576E-03          3.9000747401830563E+02         -3.1499555180274485E-03         -3.1499555180267086E-03         -3.1499555180267095E-03          3.9000747401830569E+02
+ms Si        2          3.9000747401830574E+02         -3.1499555180269576E-03         -3.1499555180267086E-03         -3.1499555180268344E-03          3.9000747401830574E+02         -3.1499555180272022E-03         -3.1499555180267112E-03         -3.1499555180267095E-03          3.9000747401830574E+02
+units efg au
+efg Si        1         -8.3155656219420495E-17          1.4659977353182089E-16         -1.0214373017713387E-16          1.4659977353182089E-16         -4.2783588271854626E-17         -8.4614697151038887E-17         -1.0214373017713387E-16         -8.4614697151038887E-17         -2.6461093219125740E-17
+efg Si        2         -6.8593994678182115E-18          1.8988369956376509E-16         -8.8604423805647757E-17          1.8988369956376509E-16         -5.3701732992366288E-17         -9.2106592483803346E-17         -8.8604423805647757E-17         -9.2106592483803346E-17         -9.9186162442063409E-17
+[/magres]
+[magres_old]
+============
+Atom: Si       1
+============
+Si       1 Coordinates      0.000    0.000    0.000   A
+ 
+TOTAL Shielding Tensor
+
+             390.0075     -0.0031     -0.0031
+              -0.0031    390.0075     -0.0031
+              -0.0031     -0.0031    390.0075
+
+Si       1 Eigenvalue  sigma_xx     390.0106 (ppm)
+Si       1 Eigenvector sigma_xx      -0.4082     -0.4082      0.8165
+Si       1 Eigenvalue  sigma_yy     390.0106 (ppm)
+Si       1 Eigenvector sigma_yy       0.7071     -0.7071      0.0000
+Si       1 Eigenvalue  sigma_zz     390.0012 (ppm)
+Si       1 Eigenvector sigma_zz       0.5774      0.5774      0.5774
+ 
+Si       1 Isotropic:      390.0075 (ppm)
+Si       1 Anisotropy:      -0.0094 (ppm)
+Si       1 Asymmetry:        0.0000
+ 
+============
+Atom: Si       2
+============
+Si       2 Coordinates      1.367    1.367    1.367   A
+ 
+TOTAL Shielding Tensor
+
+             390.0075     -0.0031     -0.0031
+              -0.0031    390.0075     -0.0031
+              -0.0031     -0.0031    390.0075
+
+Si       2 Eigenvalue  sigma_xx     390.0106 (ppm)
+Si       2 Eigenvector sigma_xx       0.7071     -0.7071      0.0000
+Si       2 Eigenvalue  sigma_yy     390.0106 (ppm)
+Si       2 Eigenvector sigma_yy      -0.4082     -0.4082      0.8165
+Si       2 Eigenvalue  sigma_zz     390.0012 (ppm)
+Si       2 Eigenvector sigma_zz       0.5774      0.5774      0.5774
+ 
+Si       2 Isotropic:      390.0075 (ppm)
+Si       2 Anisotropy:      -0.0094 (ppm)
+Si       2 Asymmetry:        0.0000
+ 
+==========================================================================
+  Using the following values of the electric quadrupole moment            
+  Si     No EFG isotope defined. Q =    1.0000 Barn
+==========================================================================
+ 
+============
+Atom: Si       1
+============
+Si       1 Coordinates      0.000    0.000    0.000   A
+ 
+TOTAL tensor
+
+              -0.0000      0.0000     -0.0000
+               0.0000     -0.0000     -0.0000
+              -0.0000     -0.0000     -0.0000
+
+Si       1 Eigenvalue  V_xx      -0.0000      
+Si       1 Eigenvector V_xx       0.2305      0.5277      0.8176
+Si       1 Eigenvalue  V_yy       0.0000      
+Si       1 Eigenvector V_yy      -0.5705     -0.6074      0.5528
+Si       1 Eigenvalue  V_zz      -0.0000      
+Si       1 Eigenvector V_zz       0.7883     -0.5938      0.1611
+ 
+Si       1 Cq:       -0.0000 (MHz)
+Si       1 Eta: N/A
+============
+Atom: Si       2
+============
+Si       2 Coordinates      1.367    1.367    1.367   A
+ 
+TOTAL tensor
+
+              -0.0000      0.0000     -0.0000
+               0.0000     -0.0000     -0.0000
+              -0.0000     -0.0000     -0.0000
+
+Si       2 Eigenvalue  V_xx      -0.0000      
+Si       2 Eigenvector V_xx       0.3689      0.1502      0.9173
+Si       2 Eigenvalue  V_yy       0.0000      
+Si       2 Eigenvector V_yy       0.6876      0.6200     -0.3780
+Si       2 Eigenvalue  V_zz      -0.0000      
+Si       2 Eigenvector V_zz      -0.6254      0.7701      0.1254
+ 
+Si       2 Cq:       -0.0000 (MHz)
+Si       2 Eta: N/A
+[/magres_old]
