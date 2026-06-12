@@ -29,7 +29,7 @@ dependencies = [
     "nomad-lab >= 1.4.2",
     "nomad-simulations @ git+https://github.com/nomad-coe/nomad-simulations.git@develop",
     "nomad-schema-plugin-simulation-workflow>=1.0.1",
-    "nomad-nmr-schema @ git+https://github.com/FAIRmat-NFDI/nomad-schema-plugin-nmr.git@v0.1.4",
+    "nomad-nmr-schema @ git+https://github.com/FAIRmat-NFDI/nomad-schema-plugin-nmr.git@v0.1.5",
 ]
 
 [project.urls]
@@ -46,7 +46,7 @@ dev = [
     "pytest-cov",
     "structlog",
     "nomad-lab[infrastructure]",  # for search and MetadataRequired to work
-    "pydantic>=2.0,<2.11",
+    "pydantic>=2.0",
 ]
 
 [tool.ruff]
