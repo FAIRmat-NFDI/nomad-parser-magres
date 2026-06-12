@@ -46,7 +46,7 @@ dev = [
     "pytest-cov",
     "structlog",
     "nomad-lab[infrastructure]",  # for search and MetadataRequired to work
-    "pydantic>=2.0,<2.11",
+    "pydantic>=2.0",
 ]
 
 [tool.ruff]
